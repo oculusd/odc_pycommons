@@ -41,6 +41,10 @@ SERVICE_URIS = {
             'us1': 'https://data-us1.oculusd.com/data/log/thing-data/<<user_token>>/<<thing_token>>',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_LST',
         },
+        'RootAccountReset': {
+            'us1': 'https://data-us1.oculusd.com/account/<<root_account_id>>/reset',
+            'ENV_OVERRIDE': 'OCULUSD_APIURI_RAR',
+        },
     }
 }
 
