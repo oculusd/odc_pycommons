@@ -47,7 +47,7 @@ SERVICE_URIS = {
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RAR',
         },
         'RootAccountThingSensorQuery': {
-            'us1': '/data/query/thing-sensor-data/<<user_token>>/<<thing_token>>/<sensor_name>>',
+            'us1': '/data/query/thing-sensor-data/<<user_token>>/<<thing_token>>/<<sensor_name>>',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RATSQ',
         },
     }
