@@ -3,6 +3,7 @@
 from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
 import json
 import urllib.request
+import urllib.parse
 import traceback
 import os
 
@@ -44,6 +45,10 @@ SERVICE_URIS = {
         'RootAccountReset': {
             'us1': 'https://data-us1.oculusd.com/account/<<root_account_id>>/reset',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RAR',
+        },
+        'RootAccountThingSensorQuery': {
+            'us1': '/data/query/thing-sensor-data/<<user_token>>/<<thing_token>>/<sensor_name>>',
+            'ENV_OVERRIDE': 'OCULUSD_APIURI_RATSQ',
         },
     }
 }
@@ -91,7 +96,26 @@ def _prepare_response_on_response(
     return response
 
 
-def get(request: CommsRequest, user_agent: str=None)->CommsResponse:
+def _parse_parameters_and_join_with_uri(uri: str, uri_parameters: dict)->str:
+    final_uri = uri
+    try:
+        if uri_parameters:
+            if isinstance(uri_parameters, dict):
+                if len(uri_parameters) > 0:
+                    final_uri = '{}?{}'.format(
+                        uri,
+                        urllib.parse.urlencode(uri_parameters)
+                    )
+    except:
+        traceback.print_exc()
+    return final_uri
+
+
+def get(
+    request: CommsRequest,
+    user_agent: str=None,
+    uri_parameters: dict=dict()
+)->CommsResponse:
     response = CommsResponse(
         is_error=True,
         response_code=-2,
@@ -100,7 +124,13 @@ def get(request: CommsRequest, user_agent: str=None)->CommsResponse:
         trace_id=request.trace_id
     )
     try:
-        req = urllib.request.Request(url=request.uri, method='GET')
+        req = urllib.request.Request(
+            url=_parse_parameters_and_join_with_uri(
+                uri=request.uri,
+                uri_parameters=uri_parameters
+            ),
+            method='GET'
+        )
         if user_agent is not None:
             req.add_header(key='User-Agent', val=user_agent)
             response.warnings.append('Using custom User-Agent: "{}"'.format(user_agent))
