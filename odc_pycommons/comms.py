@@ -1,9 +1,11 @@
 # Copyright (c) 2018. All rights reserved. OculusD.com, Inc. Please refer to the LICENSE.txt file for full license information. Licensed in terms of the GPLv3 License.
 
 from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
+from odc_pycommons import DEBUG
 import json
 import urllib.request
 import urllib.parse
+import http.client
 import traceback
 import os
 
@@ -124,6 +126,10 @@ def get(
         trace_id=request.trace_id
     )
     try:
+        debug_level = 0
+        if DEBUG:
+            debug_level=10
+            print('* debugging GET request')
         req = urllib.request.Request(
             url=_parse_parameters_and_join_with_uri(
                 uri=request.uri,
@@ -134,6 +140,14 @@ def get(
         if user_agent is not None:
             req.add_header(key='User-Agent', val=user_agent)
             response.warnings.append('Using custom User-Agent: "{}"'.format(user_agent))
+
+        handler = urllib.request.HTTPHandler(debuglevel=debug_level)
+        if request.uri.lower().startswith('https:'):
+            handler = urllib.request.HTTPSHandler(debuglevel=debug_level)
+        opener = urllib.request.build_opener(handler)
+        urllib.request.install_opener(opener)
+
+        #with opener.open("http://www.python.org/") as f:
         with urllib.request.urlopen(req) as f:
             response_code = f.getcode()
             response = _prepare_response_on_response(response_code=response_code, response=response)
