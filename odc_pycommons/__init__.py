@@ -20,4 +20,11 @@ HOME = '{}{}.oculusdcli'.format(
 )
 
 
+DEBUG=False
+
+if os.getenv('DEBUG', '0') != '0':
+    DEBUG = True
+    print('* debug enabled')
+
+
 # EOF
