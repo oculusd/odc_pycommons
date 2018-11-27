@@ -49,7 +49,7 @@ SERVICE_URIS = {
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RAR',
         },
         'RootAccountThingSensorQuery': {
-            'us1': '/data/query/thing-sensor-data/<<user_token>>/<<thing_token>>/<<sensor_name>>',
+            'us1': 'https://data-us1.oculusd.com/data/query/thing-sensor-data/<<user_token>>/<<thing_token>>/<<sensor_name>>',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RATSQ',
         },
     }
@@ -130,6 +130,7 @@ def get(
         if DEBUG:
             debug_level=10
             print('* debugging GET request')
+            print('* request={}'.format(vars(request)))
         req = urllib.request.Request(
             url=_parse_parameters_and_join_with_uri(
                 uri=request.uri,
@@ -147,9 +148,14 @@ def get(
         opener = urllib.request.build_opener(handler)
         urllib.request.install_opener(opener)
 
-        #with opener.open("http://www.python.org/") as f:
+        if DEBUG:
+            print('* Entering urlopen call')
         with urllib.request.urlopen(req) as f:
+            if DEBUG:
+                print('* Reading response')
             response_code = f.getcode()
+            if DEBUG:
+                print('* response_code={}'.format(response_code))
             response = _prepare_response_on_response(response_code=response_code, response=response)
             if response_code > 199 or response_code < 300:
                 response.response_data = f.read()
@@ -158,9 +164,13 @@ def get(
                 except:
                     response.warnings.append('UTF-8 decoding failed. Response data is in BINARY')
     except:
+        if DEBUG:
+            print('* EXCEPTION: {}'.format(traceback.format_exc()))
         response.is_error = True
         response.response_code = -3
         response.response_code_description = 'EXCEPTION: {}'.format(traceback.format_exc())
+    if DEBUG:
+        print('* response={}'.format(vars(response)))
     return response
 
 
@@ -173,6 +183,11 @@ def json_post(request: CommsRestFulRequest, user_agent: str=None)->CommsResponse
         trace_id=request.trace_id
     )
     try:
+        debug_level = 0
+        if DEBUG:
+            debug_level=10
+            print('* debugging GET request')
+            print('* request={}'.format(vars(request)))
         if request.data is not None:
             if isinstance(request.data, dict):
                 data_json = json.dumps(request.data)
@@ -182,8 +197,12 @@ def json_post(request: CommsRestFulRequest, user_agent: str=None)->CommsResponse
                 if user_agent is not None:
                     req.add_header(key='User-Agent', val=user_agent)
                     response.warnings.append('Using custom User-Agent: "{}"'.format(user_agent))
+                if DEBUG:
+                    print('* Entering urlopen call')
                 with urllib.request.urlopen(req) as f:
                     response_code = f.getcode()
+                    if DEBUG:
+                        print('* response_code={}'.format(response_code))
                     response = _prepare_response_on_response(response_code=response_code, response=response)
                     if response_code > 199 or response_code < 300:
                         response.response_data = f.read()
@@ -197,10 +216,16 @@ def json_post(request: CommsRestFulRequest, user_agent: str=None)->CommsResponse
         else:
             response.response_code = -6
             response.response_code_description = 'No data to post.'
+            if DEBUG:
+                print('* No data to post.')
     except:
+        if DEBUG:
+            print('* EXCEPTION: {}'.format(traceback.format_exc()))
         response.is_error = True
         response.response_code = -3
         response.response_code_description = 'EXCEPTION: {}'.format(traceback.format_exc())
+    if DEBUG:
+        print('* response={}'.format(vars(response)))
     return response
 
 # EOF
