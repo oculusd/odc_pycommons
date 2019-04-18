@@ -51,3 +51,13 @@ The following third party libraries are used in this project:
 
 Please refer to the various third party suppliers home pages for specific 
 licensing information.
+
+## Need more help?
+
+Try one of these resources:
+
+* [The project Wiki](https://github.com/oculusd/odc_pycommons/wiki)
+* And don't forget to [check/log issues](https://github.com/oculusd/odc_pycommons/issues)
+* Also consider the [primary documentation](https://docs.oculusd.com/index.html)
+* Finally, you can also reach us on [Discord](https://discord.gg/7utRC3X) or [Twitter](https://twitter.com/oculusdinc)
+

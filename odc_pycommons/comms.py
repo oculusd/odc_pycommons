@@ -17,39 +17,39 @@ SERVICE_URIS = {
     'DefaultRegion': 'us1',
     'Services': {
         'RegisterRootAccount': {
-            'us1': 'https://data-us1.oculusd.com/register/root-account',
+            'us1': 'https://data-us1.oculusd.com/v2/register/root-account/<<email_address>>',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RRA',
         },
         'Ping': {
-            'us1': 'https://data-us1.oculusd.com/api/ping',
+            'us1': 'https://data-us1.oculusd.com/v2/ping',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_P',
         },
         'RootAccountActivation': {
-            'us1': 'https://data-us1.oculusd.com/account/<<root_account_id>>/activate',
+            'us1': 'https://data-us1.oculusd.com/v2/activate/root-account/<<root_account_id>>/<<activation_token>>',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RAA',
         },
         'RootAccountAuthentication': {
-            'us1': 'https://data-us1.oculusd.com/account/<<root_account_id>>/authenticate',
+            'us1': 'https://data-us1.oculusd.com/v2/account/root-account/<<root_account_id>>/authenticate',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RAUTH',
         },
         'RegisterThing': {
-            'us1': 'https://data-us1.oculusd.com/register/thing/<<token>>',
+            'us1': 'https://data-us1.oculusd.com/v2/thinggroup/root-account-context/<<root_account_id>>/new-thing/<<thing_group_id>>',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RT',
         },
         'GetThingToken': {
-            'us1': 'https://data-us1.oculusd.com/thing/<<thing_id>>/<<user_token>>/create-thing-token',
+            'us1': 'https://data-us1.oculusd.com/v2/thing/root-account-context/<<root_account_id>>/create-thing-session/<<thing_group_id>>/<<thing_id>>',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_GTT',
         },
         'LogSingleThing': {
-            'us1': 'https://data-us1.oculusd.com/data/log/thing-data/<<user_token>>/<<thing_token>>',
+            'us1': 'https://data-us1.oculusd.com/v2/data/log/<<thing_id>>',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_LST',
         },
         'RootAccountReset': {
-            'us1': 'https://data-us1.oculusd.com/account/<<root_account_id>>/reset',
+            'us1': 'https://data-us1.oculusd.com/v2/account/root-account/<<root_account_id>>/request-reset',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RAR',
         },
         'RootAccountThingSensorQuery': {
-            'us1': 'https://data-us1.oculusd.com/data/query/thing-sensor-data/<<user_token>>/<<thing_token>>/<<sensor_name>>',
+            'us1': 'https://data-us1.oculusd.com/v2/data/query/root-account-context/<<root_account_id>>/<<thing_group_id>>/<<thing_id>>/simple',
             'ENV_OVERRIDE': 'OCULUSD_APIURI_RATSQ',
         },
     }
