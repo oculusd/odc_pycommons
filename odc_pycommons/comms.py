@@ -10,6 +10,9 @@ import traceback
 import os
 
 
+CURRENT_API_DEF_URI = 'https://raw.githubusercontent.com/oculusd/openapi-definitions/master/oculusd-api.yml'
+
+
 SERVICE_URIS = {
     'Regions': [
         'us1',
