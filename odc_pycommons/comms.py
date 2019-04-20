@@ -2,6 +2,7 @@
 
 from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
 from odc_pycommons import DEBUG
+import yaml
 import json
 import urllib.request
 import urllib.parse
@@ -11,69 +12,6 @@ import os
 
 
 CURRENT_API_DEF_URI = 'https://raw.githubusercontent.com/oculusd/openapi-definitions/master/oculusd-api.yml'
-
-
-SERVICE_URIS = {
-    'Regions': [
-        'us1',
-    ],
-    'DefaultRegion': 'us1',
-    'Services': {
-        'RegisterRootAccount': {
-            'us1': 'https://data-us1.oculusd.com/v2/register/root-account/<<email_address>>',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_RRA',
-        },
-        'Ping': {
-            'us1': 'https://data-us1.oculusd.com/v2/ping',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_P',
-        },
-        'RootAccountActivation': {
-            'us1': 'https://data-us1.oculusd.com/v2/activate/root-account/<<root_account_id>>/<<activation_token>>',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_RAA',
-        },
-        'RootAccountAuthentication': {
-            'us1': 'https://data-us1.oculusd.com/v2/account/root-account/<<root_account_id>>/authenticate',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_RAUTH',
-        },
-        'RegisterThing': {
-            'us1': 'https://data-us1.oculusd.com/v2/thinggroup/root-account-context/<<root_account_id>>/new-thing/<<thing_group_id>>',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_RT',
-        },
-        'GetThingToken': {
-            'us1': 'https://data-us1.oculusd.com/v2/thing/root-account-context/<<root_account_id>>/create-thing-session/<<thing_group_id>>/<<thing_id>>',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_GTT',
-        },
-        'LogSingleThing': {
-            'us1': 'https://data-us1.oculusd.com/v2/data/log/<<thing_id>>',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_LST',
-        },
-        'RootAccountReset': {
-            'us1': 'https://data-us1.oculusd.com/v2/account/root-account/<<root_account_id>>/request-reset',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_RAR',
-        },
-        'RootAccountThingSensorQuery': {
-            'us1': 'https://data-us1.oculusd.com/v2/data/query/root-account-context/<<root_account_id>>/<<thing_group_id>>/<<thing_id>>/simple',
-            'ENV_OVERRIDE': 'OCULUSD_APIURI_RATSQ',
-        },
-    }
-}
-
-
-def get_service_uri(service_name: str, region: str=None)->str:
-    selected_region = SERVICE_URIS['DefaultRegion']
-    if service_name not in SERVICE_URIS['Services']:
-        raise Exception('service_name not found')
-    if 'ENV_OVERRIDE' in SERVICE_URIS['Services'][service_name]:
-        temp = os.getenv(SERVICE_URIS['Services'][service_name]['ENV_OVERRIDE'], None)
-        if temp is not None:
-            return temp
-    if region is not None:
-        if isinstance(region, str):
-            if region in SERVICE_URIS['Regions']:
-                selected_region = region
-    if selected_region in SERVICE_URIS['Services'][service_name]:
-        return SERVICE_URIS['Services'][service_name][selected_region]
-    raise Exception('Service URI failure')
 
 
 def _prepare_response_on_response(
@@ -230,5 +168,38 @@ def json_post(request: CommsRestFulRequest, user_agent: str=None)->CommsResponse
     if DEBUG:
         print('* response={}'.format(vars(response)))
     return response
+
+
+api_def_comms_request = CommsRequest(uri=CURRENT_API_DEF_URI)
+api_def_request_responce = get(request=api_def_comms_request, user_agent='Custom')
+api_def_yaml = yaml.safe_load(api_def_request_responce.response_data)
+
+
+def get_service_uri(service_name: str, region: str=None, service_yaml_definition: dict=api_def_yaml)->str:
+    final_url = None
+    base_url = api_def_yaml['servers'][0]['url']
+    selected_region = api_def_yaml['servers'][0]['variables']['region']['default']
+    if region is not None:
+        if isinstance(region, str):
+            if region in api_def_yaml['servers'][0]['variables']['region']['enum']:
+                selected_region = region
+    if '{region}' in base_url:
+        base_url = base_url.replace('{region}', selected_region)
+
+    service_name_found = False
+    for path, path_data in api_def_yaml['paths'].items():
+        if 'x-descriptive-name' in path_data:
+            if path_data['x-descriptive-name'] == service_name:
+                service_name_found = True
+                service_path = path
+                if 'x-env-override' in path_data:
+                    service_path = os.getenv(path_data['x-env-override'], path)
+                final_url = '{}{}'.format(base_url, service_path)
+    if service_name_found is False:
+        raise Exception('service_name not found')
+    if final_url is not None:
+        return final_url
+    raise Exception('Service URI failure')
+
 
 # EOF
