@@ -58,7 +58,8 @@ def get(
     request: CommsRequest,
     user_agent: str=None,
     uri_parameters: dict=dict(),
-    path_parameters: dict=dict()
+    path_parameters: dict=dict(),
+    bearer_token: str=None
 )->CommsResponse:
     response = CommsResponse(
         is_error=True,
@@ -85,6 +86,8 @@ def get(
             ),
             method='GET'
         )
+        if bearer_token is not None:
+            req.add_header(key='Authorization', val='Bearer {}'.format(bearer_token))
         if DEBUG:
             print('Final URI: {}'.format(request_uri))
         if user_agent is not None:
@@ -125,7 +128,8 @@ def get(
 def json_post(
     request: CommsRestFulRequest,
     user_agent: str=None,
-    path_parameters: dict=dict()
+    path_parameters: dict=dict(),
+    bearer_token: str=None
 )->CommsResponse:
     response = CommsResponse(
         is_error=True,
@@ -155,6 +159,8 @@ def json_post(
                 encoded_json = data_json.encode('utf-8')
                 req = urllib.request.Request(url=request_uri, data=encoded_json, method='POST')
                 req.add_header(key='Content-type', val='application/json')
+                if bearer_token is not None:
+                    req.add_header(key='Authorization', val='Bearer {}'.format(bearer_token))
                 if user_agent is not None:
                     req.add_header(key='User-Agent', val=user_agent)
                     response.warnings.append('Using custom User-Agent: "{}"'.format(user_agent))
