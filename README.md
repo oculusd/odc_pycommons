@@ -27,7 +27,7 @@ You can enable debugging be setting the environment variable `DEBUG` to anything
 else than `'0'`. On Linux, you can accomplish this by running the following at 
 the command prompt: `$ export DEBUG=1`.
 
-Below is a simple example of the output that will now be printed to `STDOU`:
+Below is a simple example of the output that will now be printed to `STDOUT`:
 
 ```python
 >>> from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
@@ -47,10 +47,17 @@ header: Date header: Server header: Accept-Ranges header: Cache-Control header: 
 
 The following third party libraries are used in this project:
 
-* [email-validator](https://github.com/JoshData/python-email-validator) 
+* [email-validator](https://github.com/JoshData/python-email-validator)
+* [pyyaml](https://github.com/yaml/pyyaml/)
 
 Please refer to the various third party suppliers home pages for specific 
 licensing information.
+
+Installation:
+
+```bash
+pip3 install email-validator pyyaml
+```
 
 ## Need more help?
 
