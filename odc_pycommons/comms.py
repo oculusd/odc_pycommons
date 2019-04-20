@@ -57,7 +57,8 @@ def _parse_parameters_and_join_with_uri(uri: str, uri_parameters: dict)->str:
 def get(
     request: CommsRequest,
     user_agent: str=None,
-    uri_parameters: dict=dict()
+    uri_parameters: dict=dict(),
+    path_parameters: dict=dict()
 )->CommsResponse:
     response = CommsResponse(
         is_error=True,
@@ -72,17 +73,23 @@ def get(
             debug_level=10
             print('* debugging GET request')
             print('* request={}'.format(vars(request)))
+        request_uri = request.uri
+        if len(path_parameters) > 0:
+            for path_parameter_name, path_parameter_value in path_parameters.items():
+                if path_parameter_name in request_uri:
+                    request_uri = request_uri.replace(path_parameter_name, path_parameter_value)
         req = urllib.request.Request(
             url=_parse_parameters_and_join_with_uri(
-                uri=request.uri,
+                uri=request_uri,
                 uri_parameters=uri_parameters
             ),
             method='GET'
         )
+        if DEBUG:
+            print('Final URI: {}'.format(request_uri))
         if user_agent is not None:
             req.add_header(key='User-Agent', val=user_agent)
             response.warnings.append('Using custom User-Agent: "{}"'.format(user_agent))
-
         handler = urllib.request.HTTPHandler(debuglevel=debug_level)
         if request.uri.lower().startswith('https:'):
             handler = urllib.request.HTTPSHandler(debuglevel=debug_level)
@@ -115,7 +122,11 @@ def get(
     return response
 
 
-def json_post(request: CommsRestFulRequest, user_agent: str=None)->CommsResponse:
+def json_post(
+    request: CommsRestFulRequest,
+    user_agent: str=None,
+    path_parameters: dict=dict()
+)->CommsResponse:
     response = CommsResponse(
         is_error=True,
         response_code=-2,
@@ -130,10 +141,19 @@ def json_post(request: CommsRestFulRequest, user_agent: str=None)->CommsResponse
             print('* debugging GET request')
             print('* request={}'.format(vars(request)))
         if request.data is not None:
+
+            request_uri = request.uri
+            if len(path_parameters) > 0:
+                for path_parameter_name, path_parameter_value in path_parameters.items():
+                    if path_parameter_name in request_uri:
+                        request_uri = request_uri.replace(path_parameter_name, path_parameter_value)
+            if DEBUG:
+                print('Final URI: {}'.format(request_uri))
+
             if isinstance(request.data, dict):
                 data_json = json.dumps(request.data)
                 encoded_json = data_json.encode('utf-8')
-                req = urllib.request.Request(url=request.uri, data=encoded_json, method='POST')
+                req = urllib.request.Request(url=request_uri, data=encoded_json, method='POST')
                 req.add_header(key='Content-type', val='application/json')
                 if user_agent is not None:
                     req.add_header(key='User-Agent', val=user_agent)
