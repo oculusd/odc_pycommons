@@ -20,6 +20,7 @@ from odc_pycommons.security import validate_string
 from odc_pycommons.security import DataValidator
 from odc_pycommons.security import StringDataValidator
 from odc_pycommons.security import NumberDataValidator
+from odc_pycommons.persistence import GenericDataContainer
 import random
 from decimal import Decimal
 from datetime import datetime
@@ -203,7 +204,6 @@ class TestStringDataValidator(unittest.TestCase):
         self.assertIsInstance(result, bool)
         self.assertTrue(result)
 
-    @unittest.skip("GenericDataContainer code not yet available")
     def test_string_data_validator_data_container_all_defaults(self):
         self.data_container = GenericDataContainer(result_set_name='Test', data_type=str, data_validator=StringDataValidator())
         result = self.data_container.store(data=self.short_str)
