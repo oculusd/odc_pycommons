@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='odc_pycommons',  # Required
-    version='0.2.0',  # Required
+    version='0.3.0',  # Required
     description='OculusD Python Commons Library',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
@@ -17,11 +17,11 @@ setup(
     author='OculusD',  # Optional
     author_email='info@oculusd.com',  # Optional
     classifiers=[  # Optional
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Internet',
         'Topic :: Software Development :: Libraries',
-        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
