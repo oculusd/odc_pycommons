@@ -55,7 +55,7 @@ def mask_sensitive_string(
     input_str: str,
     mask_flag=None,
     use_fixed_mask_length: bool=True,
-    mask_length=8,
+    mask_length: int=8,
     mask_char: str='*',
     logger_impl: OculusDLogger=L
 )->str:
