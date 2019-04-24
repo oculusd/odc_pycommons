@@ -53,23 +53,28 @@ def validate_string(
 
 def mask_sensitive_string(
     input_str: str,
-    mask_flag: bool=True,
+    mask_flag=None,
     use_fixed_mask_length: bool=True,
-    mask_length=8,
+    mask_length: int=8,
     mask_char: str='*',
     logger_impl: OculusDLogger=L
 )->str:
     result = ''
+    if mask_flag is not None:
+        L.warning('The mask_flag parameter is deprecated and will be removed entirely in a future release. At the moment it is just ignored and has no effet.')
     if input_str is not None:
         if not isinstance(input_str, str):
             input_str = '{}'.format(input_str)
         if len(input_str) > 0:
-            if use_fixed_mask_length is True and mask_flag is True:
+            if use_fixed_mask_length is True:
                 result = '{}'.format(mask_char) * mask_length
-            elif use_fixed_mask_length is False and mask_flag is True:
+            else:
                 result = '{}'.format(mask_char) * len(input_str)
-            elif mask_flag is False:
-                result = input_str
+        else:
+            if use_fixed_mask_length is True:
+                result = '{}'.format(mask_char) * mask_length
+            else:
+                result = ''
     else:
         logger_impl.error('input_str was None - returning empty string (trying to fail gracefully)')
         return ''
@@ -183,6 +188,12 @@ class NumberDataValidator(DataValidator):
         Decimal evaluation will be performed performed thus the input validation parameters must also be converted to Decimal values if supplied
         """
         params = dict()
+        decimal_value = None
+        try:
+            decimal_value = Decimal(data)
+        except:
+            self.logger.error('Input value "{}" could not be converted to a number format for verification.'.format(data))
+            return False
         if 'min_value' in kwarg:
             if isinstance(kwarg['min_value'], Decimal):
                 params['min_value'] = kwarg['min_value']
@@ -193,7 +204,7 @@ class NumberDataValidator(DataValidator):
                 params['max_value'] = kwarg['max_value']
             else:
                 params['max_value'] = Decimal(kwarg['max_value'])
-        return self._validate_decimal(data=Decimal(data), **params)
+        return self._validate_decimal(data=decimal_value, **params)
 
     def validate(self, data: object, **kwarg)->bool:
         """Basic number validation
