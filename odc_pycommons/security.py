@@ -188,6 +188,12 @@ class NumberDataValidator(DataValidator):
         Decimal evaluation will be performed performed thus the input validation parameters must also be converted to Decimal values if supplied
         """
         params = dict()
+        decimal_value = None
+        try:
+            decimal_value = Decimal(data)
+        except:
+            self.logger.error('Input value "{}" could not be converted to a number format for verification.'.format(data))
+            return False
         if 'min_value' in kwarg:
             if isinstance(kwarg['min_value'], Decimal):
                 params['min_value'] = kwarg['min_value']
@@ -198,7 +204,7 @@ class NumberDataValidator(DataValidator):
                 params['max_value'] = kwarg['max_value']
             else:
                 params['max_value'] = Decimal(kwarg['max_value'])
-        return self._validate_decimal(data=Decimal(data), **params)
+        return self._validate_decimal(data=decimal_value, **params)
 
     def validate(self, data: object, **kwarg)->bool:
         """Basic number validation
