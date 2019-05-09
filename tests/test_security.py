@@ -61,15 +61,26 @@ class TestInitFunctions(unittest.TestCase):
         self.assertEqual(len(result), len(self.str2))
         self.assertFalse(self.str2 in result)
 
-    def test_mask_str1_toggle_mask_flag(self):
-        result = mask_sensitive_string(input_str=self.str1, mask_flag=False)
-        self.assertIsNotNone(result)
-        self.assertIsInstance(result, str)
-        self.assertEqual(len(result), len(self.str1))
-        self.assertTrue(self.str1 in result)
-
     def test_mask_none_str(self):
         result = mask_sensitive_string(input_str=None)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, str)
+        self.assertEqual(0, len(result))
+
+    def test_mask_empty_fixed_length_str(self):
+        result = mask_sensitive_string(input_str='')
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, str)
+        self.assertEqual(8, len(result))
+
+    def test_mask_empty_set_length_str(self):
+        result = mask_sensitive_string(input_str='', mask_length=4)
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, str)
+        self.assertEqual(4, len(result))
+
+    def test_mask_empty_str_no_use_fixed_mask_length(self):
+        result = mask_sensitive_string(input_str='', use_fixed_mask_length=False)
         self.assertIsNotNone(result)
         self.assertIsInstance(result, str)
         self.assertEqual(0, len(result))

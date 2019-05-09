@@ -40,8 +40,10 @@ def suite():
     suite.addTest(TestInitFunctions('test_mask_none_string_defaults'))
     suite.addTest(TestInitFunctions('test_mask_str1_toggle_use_fixed_mask_length'))
     suite.addTest(TestInitFunctions('test_mask_str2_toggle_use_fixed_mask_length'))
-    suite.addTest(TestInitFunctions('test_mask_str1_toggle_mask_flag'))
     suite.addTest(TestInitFunctions('test_mask_none_str'))
+    suite.addTest(TestInitFunctions('test_mask_empty_fixed_length_str'))
+    suite.addTest(TestInitFunctions('test_mask_empty_set_length_str'))
+    suite.addTest(TestInitFunctions('test_mask_empty_str_no_use_fixed_mask_length'))
 
     suite.addTest(TestEmailValidation('test_validation_valid_email_address'))
     suite.addTest(TestEmailValidation('test_validation_invalid_email_address_1'))

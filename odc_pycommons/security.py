@@ -53,15 +53,12 @@ def validate_string(
 
 def mask_sensitive_string(
     input_str: str,
-    mask_flag=None,
     use_fixed_mask_length: bool=True,
     mask_length: int=8,
     mask_char: str='*',
     logger_impl: OculusDLogger=L
 )->str:
     result = ''
-    if mask_flag is not None:
-        L.warning('The mask_flag parameter is deprecated and will be removed entirely in a future release. At the moment it is just ignored and has no effet.')
     if input_str is not None:
         if not isinstance(input_str, str):
             input_str = '{}'.format(input_str)
