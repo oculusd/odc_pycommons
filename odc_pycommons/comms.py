@@ -6,6 +6,7 @@
 
 from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
 from odc_pycommons import DEBUG
+from odc_pycommons import OculusDLogger
 import yaml
 import json
 import urllib.request
@@ -16,6 +17,7 @@ import os
 
 
 CURRENT_API_DEF_URI = 'https://raw.githubusercontent.com/oculusd/openapi-definitions/master/oculusd-api.yml'
+L = OculusDLogger()
 
 
 def _prepare_response_on_response(
@@ -73,11 +75,8 @@ def get(
         trace_id=request.trace_id
     )
     try:
-        debug_level = 0
-        if DEBUG:
-            debug_level=10
-            print('* debugging GET request')
-            print('* request={}'.format(vars(request)))
+        L.debug(message='debugging GET request')
+        L.debug(message='* request={}'.format(vars(request)))
         request_uri = request.uri
         if len(path_parameters) > 0:
             for path_parameter_name, path_parameter_value in path_parameters.items():
@@ -92,8 +91,7 @@ def get(
         )
         if bearer_token is not None:
             req.add_header(key='Authorization', val='Bearer {}'.format(bearer_token))
-        if DEBUG:
-            print('Final URI: {}'.format(request_uri))
+        L.debug(message='Final URI: {}'.format(request_uri))
         if user_agent is not None:
             req.add_header(key='User-Agent', val=user_agent)
             response.warnings.append('Using custom User-Agent: "{}"'.format(user_agent))
@@ -102,15 +100,11 @@ def get(
             handler = urllib.request.HTTPSHandler(debuglevel=debug_level)
         opener = urllib.request.build_opener(handler)
         urllib.request.install_opener(opener)
-
-        if DEBUG:
-            print('* Entering urlopen call')
+        L.debug(message='Entering urlopen call')
         with urllib.request.urlopen(req) as f:
-            if DEBUG:
-                print('* Reading response')
+            L.debug(message='Reading response')
             response_code = f.getcode()
-            if DEBUG:
-                print('* response_code={}'.format(response_code))
+            L.debug(message='response_code={}'.format(response_code))
             response = _prepare_response_on_response(response_code=response_code, response=response)
             if response_code > 199 or response_code < 300:
                 response.response_data = f.read()
@@ -119,13 +113,11 @@ def get(
                 except:
                     response.warnings.append('UTF-8 decoding failed. Response data is in BINARY')
     except:
-        if DEBUG:
-            print('* EXCEPTION: {}'.format(traceback.format_exc()))
+        L.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
         response.is_error = True
         response.response_code = -3
         response.response_code_description = 'EXCEPTION: {}'.format(traceback.format_exc())
-    if DEBUG:
-        print('* response={}'.format(vars(response)))
+    L.debug(message='response={}'.format(vars(response)))
     return response
 
 
@@ -143,21 +135,15 @@ def json_post(
         trace_id=request.trace_id
     )
     try:
-        debug_level = 0
-        if DEBUG:
-            debug_level=10
-            print('* debugging GET request')
-            print('* request={}'.format(vars(request)))
+        L.debug(message='debugging POST request')
+        L.debug(message='request={}'.format(vars(request)))
         if request.data is not None:
-
             request_uri = request.uri
             if len(path_parameters) > 0:
                 for path_parameter_name, path_parameter_value in path_parameters.items():
                     if path_parameter_name in request_uri:
                         request_uri = request_uri.replace(path_parameter_name, path_parameter_value)
-            if DEBUG:
-                print('Final URI: {}'.format(request_uri))
-
+            L.debug(message='Final URI: {}'.format(request_uri))
             if isinstance(request.data, dict):
                 data_json = json.dumps(request.data)
                 encoded_json = data_json.encode('utf-8')
@@ -168,12 +154,10 @@ def json_post(
                 if user_agent is not None:
                     req.add_header(key='User-Agent', val=user_agent)
                     response.warnings.append('Using custom User-Agent: "{}"'.format(user_agent))
-                if DEBUG:
-                    print('* Entering urlopen call')
+                L.debug(message='Entering urlopen call')
                 with urllib.request.urlopen(req) as f:
                     response_code = f.getcode()
-                    if DEBUG:
-                        print('* response_code={}'.format(response_code))
+                    L.debug(message='response_code={}'.format(response_code))
                     response = _prepare_response_on_response(response_code=response_code, response=response)
                     if response_code > 199 or response_code < 300:
                         response.response_data = f.read()
@@ -187,16 +171,13 @@ def json_post(
         else:
             response.response_code = -6
             response.response_code_description = 'No data to post.'
-            if DEBUG:
-                print('* No data to post.')
+            L.debug(message='No data to post')
     except:
-        if DEBUG:
-            print('* EXCEPTION: {}'.format(traceback.format_exc()))
+        L.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
         response.is_error = True
         response.response_code = -3
         response.response_code_description = 'EXCEPTION: {}'.format(traceback.format_exc())
-    if DEBUG:
-        print('* response={}'.format(vars(response)))
+    L.debug(message='response={}'.format(vars(response)))
     return response
 
 
