@@ -21,6 +21,7 @@ from tests.test_logging import TestOculusDLogger, TestGetUtcTimestamp
 from tests.test_security import TestInitFunctions, TestEmailValidation, TestStringValidation, TestDataValidator, TestStringDataValidator, TestNumberDataValidator
 from tests.test_persistence import TestGenericDataContainer, TestGenericIOProcessor, TestGenericIO, TestTextFileIO, TestValidateFileExistIOProcessor
 from tests.test_comms import TestPrepareResponseOnResponse
+from tests.test_comms import TestParseParametersAndJoinWithUri
 
 
 def suite():
@@ -180,6 +181,11 @@ def suite():
     suite.addTest(TestPrepareResponseOnResponse('test_success_response_all'))
     suite.addTest(TestPrepareResponseOnResponse('test_http_errors_response_all'))
     suite.addTest(TestPrepareResponseOnResponse('test_unknown__response_700'))
+
+    suite.addTest(TestParseParametersAndJoinWithUri('test_no_parameters_test'))
+    suite.addTest(TestParseParametersAndJoinWithUri('test_one_parameters_test'))
+    suite.addTest(TestParseParametersAndJoinWithUri('test_two_parameters_test'))
+    suite.addTest(TestParseParametersAndJoinWithUri('test_three_parameters_test'))
 
     return suite
 
