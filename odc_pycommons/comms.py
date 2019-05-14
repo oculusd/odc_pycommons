@@ -59,8 +59,8 @@ def _parse_parameters_and_join_with_uri(uri: str, uri_parameters: dict)->str:
                         uri,
                         urllib.parse.urlencode(uri_parameters)
                     )
-    except:
-        traceback.print_exc()
+    except:                         # pragma: no cover
+        traceback.print_exc()       # pragma: no cover
     return final_uri
 
 

@@ -15,6 +15,7 @@ Usage with coverage:
 
 import unittest
 from odc_pycommons.comms import _prepare_comms_response_on_http_response
+from odc_pycommons.comms import _parse_parameters_and_join_with_uri
 from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
 
 
@@ -67,6 +68,48 @@ class TestPrepareResponseOnResponse(unittest.TestCase):
         self.assertTrue(result.is_error)
         self.assertEqual('The command completed, but an unknown error occurred', result.response_code_description)
         self.assertIsNone(result.response_data)
+
+
+class TestParseParametersAndJoinWithUri(unittest.TestCase):
+
+    def test_no_parameters_test(self):
+        final_uri = _parse_parameters_and_join_with_uri(uri='test', uri_parameters={})
+        self.assertIsNotNone(final_uri)
+        self.assertIsInstance(final_uri, str)
+        self.assertEqual('test', final_uri)
+
+    def test_one_parameters_test(self):
+        final_uri = _parse_parameters_and_join_with_uri(uri='test', uri_parameters={'a': 'test_a'})
+        self.assertIsNotNone(final_uri)
+        self.assertIsInstance(final_uri, str)
+        self.assertEqual('test?a=test_a', final_uri)
+
+    def test_two_parameters_test(self):
+        final_uri = _parse_parameters_and_join_with_uri(uri='test', uri_parameters={'a': 'test_a', 'b': 2})
+        self.assertIsNotNone(final_uri)
+        self.assertIsInstance(final_uri, str)
+        self.assertTrue('test?' in final_uri)
+        self.assertTrue('a=test_a' in final_uri)
+        self.assertTrue('b=2' in final_uri)
+        self.assertTrue('&' in final_uri)
+        self.assertEqual(1, final_uri.count('?'))
+        self.assertEqual(1, final_uri.count('&'))
+        self.assertEqual(2, final_uri.count('='))
+
+    def test_three_parameters_test(self):
+        final_uri = _parse_parameters_and_join_with_uri(uri='test', uri_parameters={'a': 'test_a', 'b': 2, 'c': 'o k'})
+        self.assertIsNotNone(final_uri, 'final_uri={}'.format(final_uri))
+        self.assertIsInstance(final_uri, str, 'final_uri={}'.format(final_uri))
+        self.assertTrue('test?' in final_uri, 'final_uri={}'.format(final_uri))
+        self.assertTrue('a=test_a' in final_uri, 'final_uri={}'.format(final_uri))
+        self.assertTrue('b=2' in final_uri, 'final_uri={}'.format(final_uri))
+        self.assertTrue('c=o+k' in final_uri, 'final_uri={}'.format(final_uri))
+        self.assertTrue('&' in final_uri, 'final_uri={}'.format(final_uri))
+        self.assertEqual(1, final_uri.count('?'), 'final_uri={}'.format(final_uri))
+        self.assertEqual(2, final_uri.count('&'), 'final_uri={}'.format(final_uri))
+        self.assertEqual(3, final_uri.count('='), 'final_uri={}'.format(final_uri))
+
+        
 
 
 if __name__ == '__main__':
