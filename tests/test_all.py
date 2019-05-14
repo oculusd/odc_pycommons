@@ -12,7 +12,7 @@ Usage
 
 ::
 
-    $ coverage run  --omit="*tests*" -m tests.test_all
+    $ coverage run  --omit="*tests*,*venv*" -m tests.test_all
     $ coverage report -m
 """
 
@@ -20,6 +20,7 @@ import unittest
 from tests.test_logging import TestOculusDLogger, TestGetUtcTimestamp
 from tests.test_security import TestInitFunctions, TestEmailValidation, TestStringValidation, TestDataValidator, TestStringDataValidator, TestNumberDataValidator
 from tests.test_persistence import TestGenericDataContainer, TestGenericIOProcessor, TestGenericIO, TestTextFileIO, TestValidateFileExistIOProcessor
+from tests.test_comms import TestPrepareResponseOnResponse
 
 
 def suite():
@@ -173,6 +174,12 @@ def suite():
     suite.addTest(TestValidateFileExistIOProcessor('test_validate_file_exists_io_processor_test_non_existing_file_expect_exception'))
     suite.addTest(TestValidateFileExistIOProcessor('test_validate_file_exists_io_processor_test_invalid_generic_data_container_expect_exception'))
     suite.addTest(TestValidateFileExistIOProcessor('test_validate_file_exists_io_processor_test_invalid_generic_data_container_value_type_expect_exception'))
+
+    suite.addTest(TestPrepareResponseOnResponse('test_init_prepare_response_on_response'))
+    suite.addTest(TestPrepareResponseOnResponse('test_success_response_200'))
+    suite.addTest(TestPrepareResponseOnResponse('test_success_response_all'))
+    suite.addTest(TestPrepareResponseOnResponse('test_http_errors_response_all'))
+    suite.addTest(TestPrepareResponseOnResponse('test_unknown__response_700'))
 
     return suite
 
