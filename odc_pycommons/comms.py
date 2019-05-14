@@ -20,21 +20,25 @@ CURRENT_API_DEF_URI = 'https://raw.githubusercontent.com/oculusd/openapi-definit
 L = OculusDLogger()
 
 
-def _prepare_response_on_response(
+def _prepare_comms_response_on_http_response(
     response_code: int=0,
-    response: CommsResponse=CommsResponse(
+    response: CommsResponse=None
+)->CommsResponse:
+    if response is None:
+        response = CommsResponse(
         is_error=True,
         response_code=-2,
         response_code_description='Unknown error',
         response_data=None,
         trace_id=None
-    )
-)->CommsResponse:
-    if response_code > 199 or response_code < 300:
+    )   
+    if response_code > 199 and response_code < 300:
         response.is_error = False
         response.response_code = response_code
         response.response_code_description = 'Ok'
-    elif response_code < 200 or response_code > 299:
+    elif response_code < 1:
+        return response
+    elif (response_code < 200 or response_code > 299) and response_code < 600:
         response.is_error = True
         response.response_code = response_code
         response.response_code_description = 'Refer to the appropriate HTTP error code: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes'
@@ -78,6 +82,9 @@ def get(
         L.debug(message='debugging GET request')
         L.debug(message='* request={}'.format(vars(request)))
         request_uri = request.uri
+        debug_level = 0
+        if DEBUG:
+            debug_level = 9
         if len(path_parameters) > 0:
             for path_parameter_name, path_parameter_value in path_parameters.items():
                 if path_parameter_name in request_uri:
@@ -105,7 +112,7 @@ def get(
             L.debug(message='Reading response')
             response_code = f.getcode()
             L.debug(message='response_code={}'.format(response_code))
-            response = _prepare_response_on_response(response_code=response_code, response=response)
+            response = _prepare_comms_response_on_http_response(response_code=response_code, response=response)
             if response_code > 199 or response_code < 300:
                 response.response_data = f.read()
                 try:
@@ -158,7 +165,7 @@ def json_post(
                 with urllib.request.urlopen(req) as f:
                     response_code = f.getcode()
                     L.debug(message='response_code={}'.format(response_code))
-                    response = _prepare_response_on_response(response_code=response_code, response=response)
+                    response = _prepare_comms_response_on_http_response(response_code=response_code, response=response)
                     if response_code > 199 or response_code < 300:
                         response.response_data = f.read()
                         try:
