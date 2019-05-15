@@ -22,6 +22,7 @@ from tests.test_security import TestInitFunctions, TestEmailValidation, TestStri
 from tests.test_persistence import TestGenericDataContainer, TestGenericIOProcessor, TestGenericIO, TestTextFileIO, TestValidateFileExistIOProcessor
 from tests.test_comms import TestPrepareResponseOnResponse
 from tests.test_comms import TestParseParametersAndJoinWithUri
+from tests.test_comms import TestGetFunction
 
 
 def suite():
@@ -186,6 +187,10 @@ def suite():
     suite.addTest(TestParseParametersAndJoinWithUri('test_one_parameters_test'))
     suite.addTest(TestParseParametersAndJoinWithUri('test_two_parameters_test'))
     suite.addTest(TestParseParametersAndJoinWithUri('test_three_parameters_test'))
+
+    suite.addTest(TestGetFunction('test_local_server_basic_get_01'))
+    suite.addTest(TestGetFunction('test_local_server_get_with_path_parameters'))
+    suite.addTest(TestGetFunction('test_local_server_get_with_bearer_token_01'))
 
     return suite
 

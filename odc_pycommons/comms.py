@@ -11,7 +11,7 @@ import yaml
 import json
 import urllib.request
 import urllib.parse
-import http.client
+#import http.client
 import traceback
 import os
 
@@ -59,8 +59,8 @@ def _parse_parameters_and_join_with_uri(uri: str, uri_parameters: dict)->str:
                         uri,
                         urllib.parse.urlencode(uri_parameters)
                     )
-    except:                         # pragma: no cover
-        traceback.print_exc()       # pragma: no cover
+    except:                                                                                             # pragma: no cover
+        traceback.print_exc()                                                                           # pragma: no cover
     return final_uri
 
 
@@ -80,11 +80,11 @@ def get(
     )
     try:
         L.debug(message='debugging GET request')
-        L.debug(message='* request={}'.format(vars(request)))
+        L.debug(message='request={}'.format(vars(request)))
         request_uri = request.uri
         debug_level = 0
-        if DEBUG:
-            debug_level = 9
+        if DEBUG:                                                                                       # pragma: no cover
+            debug_level = 9                                                                             # pragma: no cover
         if len(path_parameters) > 0:
             for path_parameter_name, path_parameter_value in path_parameters.items():
                 if path_parameter_name in request_uri:
@@ -117,13 +117,13 @@ def get(
                 response.response_data = f.read()
                 try:
                     response.response_data = response.response_data.decode('utf-8')
-                except:
-                    response.warnings.append('UTF-8 decoding failed. Response data is in BINARY')
-    except:
-        L.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
-        response.is_error = True
-        response.response_code = -3
-        response.response_code_description = 'EXCEPTION: {}'.format(traceback.format_exc())
+                except:                                                                                 # pragma: no cover
+                    response.warnings.append('UTF-8 decoding failed. Response data is in BINARY')       # pragma: no cover
+    except:                                                                                             # pragma: no cover
+        L.error(message='EXCEPTION: {}'.format(traceback.format_exc()))                                 # pragma: no cover
+        response.is_error = True                                                                        # pragma: no cover
+        response.response_code = -3                                                                     # pragma: no cover
+        response.response_code_description = 'EXCEPTION: {}'.format(traceback.format_exc())             # pragma: no cover
     L.debug(message='response={}'.format(vars(response)))
     return response
 

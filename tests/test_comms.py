@@ -14,9 +14,58 @@ Usage with coverage:
 """
 
 import unittest
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+import json
 from odc_pycommons.comms import _prepare_comms_response_on_http_response
 from odc_pycommons.comms import _parse_parameters_and_join_with_uri
+from odc_pycommons.comms import get
 from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
+
+
+class HttpHandlerForLocalTesting(BaseHTTPRequestHandler):
+
+    def _set_200_json_response(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+
+    def _set_201_json_response(self):
+        self.send_response(201)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+
+    def do_GET(self):
+        self._set_200_json_response()
+        result = {
+            'GET': 'Ok',
+            'Path': str(self.path),
+            'Headers': str(self.headers),
+        }
+        self.wfile.write(json.dumps(result).encode('utf-8'))
+
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])    # <--- Gets the size of data
+        post_data = self.rfile.read(content_length)             # <--- Gets the data itself
+        self._set_201_json_response()
+        result = {
+            'POST': 'Ok',
+            'Path': str(self.path),
+            'Headers': str(self.headers),
+            'Body': post_data.decode('utf-8'),
+        }
+        self.wfile.write(json.dumps(result).encode('utf-8'))
+
+
+class HttpTestServerThreading(object):
+    def __init__(self):
+        thread = threading.Thread(target=self.run, args=())
+        thread.daemon = True
+        thread.start()
+
+    def run(self):
+        print('Starting Web Server')
+        HTTPServer(('127.0.0.1', 8083), HttpHandlerForLocalTesting).serve_forever()
 
 
 class TestPrepareResponseOnResponse(unittest.TestCase):
@@ -109,7 +158,54 @@ class TestParseParametersAndJoinWithUri(unittest.TestCase):
         self.assertEqual(2, final_uri.count('&'), 'final_uri={}'.format(final_uri))
         self.assertEqual(3, final_uri.count('='), 'final_uri={}'.format(final_uri))
 
-        
+
+class TestGetFunction(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls._connection = HttpTestServerThreading()
+        print('Web Server Running')
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._connection = None
+        print('Web Server Stopped')
+
+    def test_local_server_basic_get_01(self):
+        get_comms_request = CommsRequest(uri='http://127.0.0.1:8083/dummy')
+        request_result = get(request=get_comms_request)
+        self.assertIsNotNone(request_result)
+        self.assertIsInstance(request_result, CommsResponse)
+        self.assertEqual(200, request_result.response_code)
+        self.assertFalse(request_result.is_error)
+        self.assertIsInstance(request_result.response_data, str)
+        self.assertTrue('GET' in request_result.response_data)
+        self.assertFalse('authorization' in request_result.response_data.lower())
+
+    def test_local_server_get_with_path_parameters(self):
+        get_comms_request = CommsRequest(uri='http://127.0.0.1:8083/dummy/__VAR__')
+        request_result = get(request=get_comms_request, path_parameters={'__VAR__': 'testvar'})
+        response_dict = json.loads(request_result.response_data)
+        self.assertIsNotNone(request_result)
+        self.assertIsInstance(request_result, CommsResponse)
+        self.assertEqual(200, request_result.response_code)
+        self.assertFalse(request_result.is_error)
+        self.assertIsInstance(response_dict, dict)
+        self.assertTrue('Path' in response_dict)
+        self.assertEqual('/dummy/testvar', response_dict['Path'])
+        self.assertFalse('authorization' in request_result.response_data.lower())
+
+    def test_local_server_get_with_bearer_token_01(self):
+        get_comms_request = CommsRequest(uri='http://127.0.0.1:8083/dummy')
+        request_result = get(request=get_comms_request, bearer_token='aaa.bbb.ccc')
+        self.assertIsNotNone(request_result)
+        self.assertIsInstance(request_result, CommsResponse)
+        self.assertEqual(200, request_result.response_code)
+        self.assertFalse(request_result.is_error)
+        self.assertIsInstance(request_result.response_data, str)
+        self.assertTrue('GET' in request_result.response_data)
+        self.assertTrue('authorization' in request_result.response_data.lower())
+        self.assertTrue('aaa.bbb.ccc' in request_result.response_data.lower())
 
 
 if __name__ == '__main__':
