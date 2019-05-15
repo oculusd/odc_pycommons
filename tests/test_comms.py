@@ -11,6 +11,13 @@ Usage with coverage:
 
     $ coverage run --omit="*tests*,*venv*,odc_pycommons/__init__.py,odc_pycommons\models.py"  -m tests.test_comms
     $ coverage report -m
+
+
+Special thanks to:
+
+    * Miel Donkers for https://gist.github.com/mdonkers/63e115cc0c79b4f6b8b3a6b797e485c7 that helped a lot in setting up the web server test framework
+    * Hasan Sajedi for https://dev.to/hasansajedi/running-a-method-as-a-background-process-in-python-21li that helped me figure out how to run the test web server in the background 
+
 """
 
 import unittest
