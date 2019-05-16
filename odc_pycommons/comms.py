@@ -170,21 +170,21 @@ def json_post(
                         response.response_data = f.read()
                         try:
                             response.response_data = response.response_data.decode('utf-8')
-                        except:
-                            response.warnings.append('UTF-8 decoding failed. Response data is in BINARY')
-            else:
-                response.response_code = -5
-                response.response_code_description = 'Expected a dictionary, but found "{}"'.format(type(request.data))
+                        except:                                                                                         # pragma: no cover
+                            response.warnings.append('UTF-8 decoding failed. Response data is in BINARY')               # pragma: no cover
+            else:                                                                                                       # pragma: no cover
+                response.response_code = -5                                                                             # pragma: no cover
+                response.response_code_description = 'Expected a dictionary, but found "{}"'.format(type(request.data)) # pragma: no cover
         else:
             response.response_code = -6
             response.response_code_description = 'No data to post.'
             L.debug(message='No data to post')
-    except:
-        L.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
-        response.is_error = True
-        response.response_code = -3
-        response.response_code_description = 'EXCEPTION: {}'.format(traceback.format_exc())
-    L.debug(message='response={}'.format(vars(response)))
+    except:                                                                                                             # pragma: no cover
+        L.error(message='EXCEPTION: {}'.format(traceback.format_exc()))                                                 # pragma: no cover
+        response.is_error = True                                                                                        # pragma: no cover
+        response.response_code = -3                                                                                     # pragma: no cover
+        response.response_code_description = 'EXCEPTION: {}'.format(traceback.format_exc())                             # pragma: no cover
+    L.debug(message='response={}'.format(vars(response)))                                                               # pragma: no cover
     return response
 
 

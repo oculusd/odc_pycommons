@@ -23,6 +23,7 @@ from tests.test_persistence import TestGenericDataContainer, TestGenericIOProces
 from tests.test_comms import TestPrepareResponseOnResponse
 from tests.test_comms import TestParseParametersAndJoinWithUri
 from tests.test_comms import TestGetFunction
+from tests.test_comms import TestJsonPostFunction
 
 
 def suite():
@@ -191,6 +192,12 @@ def suite():
     suite.addTest(TestGetFunction('test_local_server_basic_get_01'))
     suite.addTest(TestGetFunction('test_local_server_get_with_path_parameters'))
     suite.addTest(TestGetFunction('test_local_server_get_with_bearer_token_01'))
+
+    suite.addTest(TestJsonPostFunction('test_local_server_basic_post_01'))
+    suite.addTest(TestJsonPostFunction('test_local_server_post_with_path_parameters'))
+    suite.addTest(TestJsonPostFunction('test_local_server_post_with_bearer_token_01'))
+    suite.addTest(TestJsonPostFunction('test_local_server_post_with_user_agent_01'))
+    suite.addTest(TestJsonPostFunction('test_local_server_post_fail_on_empty_request_body_01'))
 
     return suite
 
