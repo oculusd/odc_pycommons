@@ -21,6 +21,7 @@ Special thanks to:
 """
 
 import unittest
+from unittest.mock import MagicMock
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 import json
@@ -28,6 +29,7 @@ from odc_pycommons.comms import _prepare_comms_response_on_http_response
 from odc_pycommons.comms import _parse_parameters_and_join_with_uri
 from odc_pycommons.comms import get
 from odc_pycommons.comms import json_post
+from odc_pycommons.comms import get_oculusd_service_yaml
 from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
 
 
@@ -306,6 +308,42 @@ class TestJsonPostFunction(unittest.TestCase):
         self.assertIsNotNone(request_result)
         self.assertIsInstance(request_result, CommsResponse)
         self.assertEqual(-6, request_result.response_code)
+
+
+class TestGetOculusdServiceYaml(unittest.TestCase):
+
+    def setUp(self):
+        data = None
+        with open('tests/service_config.yml', 'r') as f:
+            data = f.read()
+        self.mock_get_impl = MagicMock(
+            return_value=CommsResponse(
+                is_error=False,
+                response_code=200,
+                response_data=data
+            )
+        )
+
+    def test_read_local_data(self):
+        result = self.mock_get_impl(request=CommsRequest(uri='http://localhost'))
+        self.assertIsNotNone(result)
+        self.assertIsInstance(result, CommsResponse)
+        data = result.response_data
+        self.assertIsNotNone(data)
+        self.assertIsInstance(data, str)
+
+    def test_get_oculusd_service_yaml(self):
+        conf = get_oculusd_service_yaml(
+            service_uri='http://localhost',
+            http_get_service_impl=self.mock_get_impl
+        )
+        self.assertIsNotNone(conf)
+        self.assertIsInstance(conf, dict)
+        self.assertTrue(len(conf) > 0)
+        self.assertTrue('openapi' in conf)
+        self.assertTrue('info' in conf)
+        self.assertTrue('paths' in conf)
+        self.assertTrue('components' in conf)
 
 
 if __name__ == '__main__':

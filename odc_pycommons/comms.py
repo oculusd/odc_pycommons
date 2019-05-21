@@ -16,8 +16,9 @@ import traceback
 import os
 
 
-CURRENT_API_DEF_URI = 'https://raw.githubusercontent.com/oculusd/openapi-definitions/master/oculusd-api.yml'
+CURRENT_API_DEF_URI = os.getenv('API_DEF_URI', 'https://raw.githubusercontent.com/oculusd/openapi-definitions/master/oculusd-api.yml')
 L = OculusDLogger()
+api_def_yaml_as_dict = None
 
 
 def _prepare_comms_response_on_http_response(
@@ -188,24 +189,36 @@ def json_post(
     return response
 
 
-api_def_comms_request = CommsRequest(uri=CURRENT_API_DEF_URI)
-api_def_request_responce = get(request=api_def_comms_request, user_agent='Custom')
-api_def_yaml = yaml.safe_load(api_def_request_responce.response_data)
+def get_oculusd_service_yaml(
+    service_uri: str=CURRENT_API_DEF_URI,
+    http_get_service_impl: object=get
+)->dict:
+    global api_def_yaml_as_dict
+    try:
+        if api_def_yaml_as_dict is not None:
+            return api_def_yaml_as_dict
+        api_def_comms_request = CommsRequest(uri=CURRENT_API_DEF_URI)
+        api_def_request_responce = http_get_service_impl(request=api_def_comms_request, user_agent='Custom')
+        api_def_yaml_as_dict = yaml.safe_load(api_def_request_responce.response_data)
+        return api_def_yaml_as_dict
+    except:                                                                                                             # pragma: no cover
+        pass                                                                                                            # pragma: no cover
+    raise Exception('Failed to retrieve OculusD Service Definition')                                                    # pragma: no cover
 
 
-def get_service_uri(service_name: str, region: str=None, service_yaml_definition: dict=api_def_yaml)->str:
+def get_service_uri(service_name: str, region: str=None, service_yaml_definition: dict=get_oculusd_service_yaml())->str:
     final_url = None
-    base_url = api_def_yaml['servers'][0]['url']
-    selected_region = api_def_yaml['servers'][0]['variables']['region']['default']
+    base_url = api_def_yaml_as_dict['servers'][0]['url']
+    selected_region = api_def_yaml_as_dict['servers'][0]['variables']['region']['default']
     if region is not None:
         if isinstance(region, str):
-            if region in api_def_yaml['servers'][0]['variables']['region']['enum']:
+            if region in api_def_yaml_as_dict['servers'][0]['variables']['region']['enum']:
                 selected_region = region
     if '{region}' in base_url:
         base_url = base_url.replace('{region}', selected_region)
 
     service_name_found = False
-    for path, path_data in api_def_yaml['paths'].items():
+    for path, path_data in api_def_yaml_as_dict['paths'].items():
         if 'x-descriptive-name' in path_data:
             if path_data['x-descriptive-name'] == service_name:
                 service_name_found = True

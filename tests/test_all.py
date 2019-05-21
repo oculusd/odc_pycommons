@@ -24,6 +24,7 @@ from tests.test_comms import TestPrepareResponseOnResponse
 from tests.test_comms import TestParseParametersAndJoinWithUri
 from tests.test_comms import TestGetFunction
 from tests.test_comms import TestJsonPostFunction
+from tests.test_comms import TestGetOculusdServiceYaml
 
 
 def suite():
@@ -198,6 +199,9 @@ def suite():
     suite.addTest(TestJsonPostFunction('test_local_server_post_with_bearer_token_01'))
     suite.addTest(TestJsonPostFunction('test_local_server_post_with_user_agent_01'))
     suite.addTest(TestJsonPostFunction('test_local_server_post_fail_on_empty_request_body_01'))
+
+    suite.addTest(TestGetOculusdServiceYaml('test_read_local_data'))
+    suite.addTest(TestGetOculusdServiceYaml('test_get_oculusd_service_yaml'))
 
     return suite
 
