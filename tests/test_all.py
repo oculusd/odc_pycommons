@@ -26,6 +26,7 @@ from tests.test_comms import TestGetFunction
 from tests.test_comms import TestJsonPostFunction
 from tests.test_comms import TestGetOculusdServiceYaml
 from tests.test_comms import TestGetServiceUri
+from tests.test_models import TestCommsRequest
 
 
 def suite():
@@ -206,6 +207,15 @@ def suite():
 
     suite.addTest(TestGetServiceUri('test_get_service_uri_ping_service_01'))
     suite.addTest(TestGetServiceUri('test_service_name_not_found_01'))
+
+    suite.addTest(TestCommsRequest('test_init_comms_request_01'))
+    suite.addTest(TestCommsRequest('test_init_comms_request_02'))
+    suite.addTest(TestCommsRequest('test_init_fail_on_none_uri_01'))
+    suite.addTest(TestCommsRequest('test_validate_valid_uri'))
+    suite.addTest(TestCommsRequest('test_validate_fail_on_uri_as_int'))
+    suite.addTest(TestCommsRequest('test_validate_fail_on_uri_to_short'))
+    suite.addTest(TestCommsRequest('test_validate_warn_on_trace_id_not_string'))
+    suite.addTest(TestCommsRequest('test_fail_on_dict_call'))
 
     return suite
 
