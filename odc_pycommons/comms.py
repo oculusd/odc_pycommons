@@ -228,9 +228,9 @@ def get_service_uri(service_name: str, region: str=None, service_yaml_definition
                 final_url = '{}{}'.format(base_url, service_path)
     if service_name_found is False:
         raise Exception('service_name not found')
-    if final_url is not None:
-        return final_url
-    raise Exception('Service URI failure')
+    if final_url is not None:                                                                                           # pragma: no cover
+        return final_url                                                                                                # pragma: no cover
+    raise Exception('Service URI failure')                                                                              # pragma: no cover
 
 
 # EOF

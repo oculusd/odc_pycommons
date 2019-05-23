@@ -25,6 +25,7 @@ from tests.test_comms import TestParseParametersAndJoinWithUri
 from tests.test_comms import TestGetFunction
 from tests.test_comms import TestJsonPostFunction
 from tests.test_comms import TestGetOculusdServiceYaml
+from tests.test_comms import TestGetServiceUri
 
 
 def suite():
@@ -202,6 +203,9 @@ def suite():
 
     suite.addTest(TestGetOculusdServiceYaml('test_read_local_data'))
     suite.addTest(TestGetOculusdServiceYaml('test_get_oculusd_service_yaml'))
+
+    suite.addTest(TestGetServiceUri('test_get_service_uri_ping_service_01'))
+    suite.addTest(TestGetServiceUri('test_service_name_not_found_01'))
 
     return suite
 

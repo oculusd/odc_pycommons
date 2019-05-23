@@ -30,6 +30,7 @@ from odc_pycommons.comms import _parse_parameters_and_join_with_uri
 from odc_pycommons.comms import get
 from odc_pycommons.comms import json_post
 from odc_pycommons.comms import get_oculusd_service_yaml
+from odc_pycommons.comms import get_service_uri
 from odc_pycommons.models import CommsRequest, CommsRestFulRequest, CommsResponse
 
 
@@ -344,6 +345,30 @@ class TestGetOculusdServiceYaml(unittest.TestCase):
         self.assertTrue('info' in conf)
         self.assertTrue('paths' in conf)
         self.assertTrue('components' in conf)
+
+
+class TestGetServiceUri(unittest.TestCase):
+
+    def setUp(self):
+        self.data = None
+        with open('tests/service_config.yml', 'r') as f:
+            self.data = f.read()
+    
+    def test_get_service_uri_ping_service_01(self):
+        service_uri = get_service_uri(
+            service_name='Ping',
+            region='us1',
+            service_yaml_definition=self.data
+        )
+        self.assertIsNotNone(service_uri)
+        self.assertTrue(service_uri.startswith('http'))
+
+    def test_service_name_not_found_01(self):
+        with self.assertRaises(Exception):
+            service_uri = get_service_uri(
+                service_name='YouCantFindMe',
+                service_yaml_definition=self.data
+            )
 
 
 if __name__ == '__main__':
