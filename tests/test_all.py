@@ -27,6 +27,7 @@ from tests.test_comms import TestJsonPostFunction
 from tests.test_comms import TestGetOculusdServiceYaml
 from tests.test_comms import TestGetServiceUri
 from tests.test_models import TestCommsRequest
+from tests.test_models import TestCommsRestFulRequest
 
 
 def suite():
@@ -216,6 +217,15 @@ def suite():
     suite.addTest(TestCommsRequest('test_validate_fail_on_uri_to_short'))
     suite.addTest(TestCommsRequest('test_validate_warn_on_trace_id_not_string'))
     suite.addTest(TestCommsRequest('test_fail_on_dict_call'))
+
+    suite.addTest(TestCommsRestFulRequest('test_init_comms_rest_ful_request_01'))
+    suite.addTest(TestCommsRestFulRequest('test_validate_fail_on_data_is_none'))
+    suite.addTest(TestCommsRestFulRequest('test_validate_fail_on_data_is_string'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_data_to_dict_from_dict'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_data_to_dict_from_list'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_data_to_dict_from_tuple'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_to_dict_invalid_data_type_produces_warning'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_data_to_json_from_dict'))
 
     return suite
 

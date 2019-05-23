@@ -16,6 +16,7 @@ Usage with coverage:
 
 import unittest
 from odc_pycommons.models import CommsRequest
+from odc_pycommons.models import CommsRestFulRequest
 
 
 class TestCommsRequest(unittest.TestCase):
@@ -63,6 +64,63 @@ class TestCommsRequest(unittest.TestCase):
         instance = CommsRequest(uri='test')
         with self.assertRaises(Exception):
             instance.to_dict()
+
+
+class TestCommsRestFulRequest(unittest.TestCase):
+
+    def test_init_comms_rest_ful_request_01(self):
+        instance = CommsRestFulRequest(uri='test', data={'a': 1, 'b': True, 'c': 123})
+        self.assertIsNotNone(instance)
+        self.assertIsInstance(instance, CommsRequest)
+        self.assertEqual('test', instance.uri)
+        self.assertIsNone(instance.trace_id)
+        self.assertIsNotNone(instance.data)
+        self.assertIsInstance(instance.data, dict)
+        self.assertTrue(3, len(instance.data))
+
+    def test_validate_fail_on_data_is_none(self):
+        instance = CommsRestFulRequest(uri='test', data={'a': 1, 'b': True, 'c': 123})
+        with self.assertRaises(Exception):
+            instance._validate_data(data=None)
+
+    def test_validate_fail_on_data_is_string(self):
+        instance = CommsRestFulRequest(uri='test', data={'a': 1, 'b': True, 'c': 123})
+        with self.assertRaises(Exception):
+            instance._validate_data(data='123')
+
+    def test_restful_data_to_dict_from_dict(self):
+        instance = CommsRestFulRequest(uri='test', data={'a': 1, 'b': True, 'c': 123})
+        d = instance.to_dict()
+        for key in list(d.keys()):
+            self.assertTrue(key in instance.data, 'Key "{}" not found'.format(key))
+
+    def test_restful_data_to_dict_from_list(self):
+        instance = CommsRestFulRequest(uri='test', data=[1, 2, 3])
+        d = instance.to_dict()
+        self.assertEqual(3, len(d))
+        for item in d:
+            self.assertTrue(item in instance.data, 'Item "{}" not found'.format(item))
+
+    def test_restful_data_to_dict_from_tuple(self):
+        instance = CommsRestFulRequest(uri='test', data=(1, 2, 3))
+        d = instance.to_dict()
+        self.assertIsInstance(d, list)
+        self.assertEqual(3, len(d))
+        for item in d:
+            self.assertTrue(item in instance.data, 'Item "{}" not found'.format(item))
+
+    def test_restful_to_dict_invalid_data_type_produces_warning(self):
+        instance = CommsRestFulRequest(uri='test', data=(1, 2, 3))
+        instance.data = 'abc'
+        d = instance.to_dict()
+        self.assertEqual(0, len(d))
+
+    def test_restful_data_to_json_from_dict(self):
+        instance = CommsRestFulRequest(uri='test', data={'a': 1, 'b': True, 'c': 123})
+        j = instance.to_json()
+        self.assertIsInstance(j, str)
+        for key in list(instance.data.keys()):
+            self.assertTrue('"{}"'.format(key) in j, 'Key "{}" not found'.format(key))
 
 
 # EOF
