@@ -17,6 +17,7 @@ Usage with coverage:
 import unittest
 from odc_pycommons.models import CommsRequest
 from odc_pycommons.models import CommsRestFulRequest
+from odc_pycommons.models import CommsResponse
 
 
 class TestCommsRequest(unittest.TestCase):
@@ -122,5 +123,71 @@ class TestCommsRestFulRequest(unittest.TestCase):
         for key in list(instance.data.keys()):
             self.assertTrue('"{}"'.format(key) in j, 'Key "{}" not found'.format(key))
 
+
+class TestCommsResponse(unittest.TestCase):
+
+    def test_init_default_comms_response(self):
+        response = CommsResponse()
+        self.assertIsNotNone(response)
+        self.assertIsInstance(response, CommsResponse)
+        self.assertTrue(response.is_error)
+        self.assertIsNotNone(response.response_code)
+        self.assertIsInstance(response.response_code, int)
+        self.assertEqual(response.response_code, -1)
+        self.assertIsNotNone(response.response_code_description)
+        self.assertIsInstance(response.response_code_description, str)
+        self.assertIsNone(response.response_data)
+
+    def test_fail_on_is_error_is_none(self):
+        with self.assertRaises(Exception):
+            CommsResponse(is_error=None)
+
+    def test_fail_on_is_error_is_not_bool(self):
+        with self.assertRaises(Exception):
+            CommsResponse(is_error=1)
+
+    def test_fail_on_response_code_is_none(self):
+        with self.assertRaises(Exception):
+            CommsResponse(response_code=None)
+
+    def test_fail_on_response_code_is_not_int(self):
+        with self.assertRaises(Exception):
+            CommsResponse(response_code='ok')
+
+    def test_fail_on_response_code_description_is_not_str(self):
+        with self.assertRaises(Exception):
+            CommsResponse(response_code_description=200)
+
+    def test_fail_on_response_data_is_not_str(self):
+        with self.assertRaises(Exception):
+            CommsResponse(response_data=200)
+        with self.assertRaises(Exception):
+            CommsResponse(response_data=True)
+        with self.assertRaises(Exception):
+            CommsResponse(response_data={'a':1})
+
+    def test_fail_on_trace_id_is_not_str(self):
+        with self.assertRaises(Exception):
+            CommsResponse(trace_id=200)
+
+    def test_init_default_comms_response_to_dict(self):
+        response = CommsResponse()
+        response_dict = response.to_dict()
+        self.assertIsNotNone(response_dict)
+        self.assertIsInstance(response_dict, dict)
+        expected = {
+            'IsError': True,
+            'ResponseCode': -1,
+            'ResponseDescription': '',
+            'Data': None,
+            'TraceId': None,
+            'Warnings': list()
+        }
+        for expected_key, expected_value in expected.items():
+            self.assertTrue(expected_key in response_dict, 'Key "{}" not found'.format(expected_key))
+
+
+if __name__ == '__main__':
+    unittest.main()
 
 # EOF

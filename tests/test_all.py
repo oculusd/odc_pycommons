@@ -28,6 +28,7 @@ from tests.test_comms import TestGetOculusdServiceYaml
 from tests.test_comms import TestGetServiceUri
 from tests.test_models import TestCommsRequest
 from tests.test_models import TestCommsRestFulRequest
+from tests.test_models import TestCommsResponse
 
 
 def suite():
@@ -226,6 +227,16 @@ def suite():
     suite.addTest(TestCommsRestFulRequest('test_restful_data_to_dict_from_tuple'))
     suite.addTest(TestCommsRestFulRequest('test_restful_to_dict_invalid_data_type_produces_warning'))
     suite.addTest(TestCommsRestFulRequest('test_restful_data_to_json_from_dict'))
+
+    suite.addTest(TestCommsResponse('test_init_default_comms_response'))
+    suite.addTest(TestCommsResponse('test_fail_on_is_error_is_none'))
+    suite.addTest(TestCommsResponse('test_fail_on_is_error_is_not_bool'))
+    suite.addTest(TestCommsResponse('test_fail_on_response_code_is_none'))
+    suite.addTest(TestCommsResponse('test_fail_on_response_code_is_not_int'))
+    suite.addTest(TestCommsResponse('test_fail_on_response_code_description_is_not_str'))
+    suite.addTest(TestCommsResponse('test_fail_on_response_data_is_not_str'))
+    suite.addTest(TestCommsResponse('test_fail_on_trace_id_is_not_str'))
+    suite.addTest(TestCommsResponse('test_init_default_comms_response_to_dict'))
 
     return suite
 
