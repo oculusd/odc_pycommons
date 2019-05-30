@@ -237,6 +237,9 @@ def suite():
     suite.addTest(TestCommsResponse('test_fail_on_response_data_is_not_str'))
     suite.addTest(TestCommsResponse('test_fail_on_trace_id_is_not_str'))
     suite.addTest(TestCommsResponse('test_init_default_comms_response_to_dict'))
+    suite.addTest(TestCommsResponse('test_with_data_comms_response_to_dict'))
+    suite.addTest(TestCommsResponse('test_with_data_comms_response_to_dict_data_as_tuple'))
+    suite.addTest(TestCommsResponse('test_with_data_comms_response_to_dict_data_as_decimal'))
 
     return suite
 

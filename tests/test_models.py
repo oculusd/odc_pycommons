@@ -18,6 +18,7 @@ import unittest
 from odc_pycommons.models import CommsRequest
 from odc_pycommons.models import CommsRestFulRequest
 from odc_pycommons.models import CommsResponse
+from decimal import Decimal
 
 
 class TestCommsRequest(unittest.TestCase):
@@ -178,13 +179,65 @@ class TestCommsResponse(unittest.TestCase):
         expected = {
             'IsError': True,
             'ResponseCode': -1,
-            'ResponseDescription': '',
+            'ResponseDescription': 'Response code undefined',
             'Data': None,
             'TraceId': None,
             'Warnings': list()
         }
         for expected_key, expected_value in expected.items():
             self.assertTrue(expected_key in response_dict, 'Key "{}" not found'.format(expected_key))
+            self.assertEqual(expected[expected_key], response_dict[expected_key], 'Key "{}", value mismatch.'.format(expected_key))
+
+    def test_with_data_comms_response_to_dict(self):
+        response = CommsResponse(
+            is_error=False,
+            response_code=200,
+            response_code_description='Ok',
+            response_data='{"a": "test", "b": 1, "c": true, "d": null}'
+        )
+        response_dict = response.to_dict()
+        self.assertIsNotNone(response_dict)
+        self.assertIsInstance(response_dict, dict)
+        expected = {
+            'IsError': False,
+            'ResponseCode': 200,
+            'ResponseDescription': 'Ok',
+            'Data': '{"a": "test", "b": 1, "c": true, "d": null}',
+            'TraceId': None,
+            'Warnings': list()
+        }
+        for expected_key, expected_value in expected.items():
+            self.assertTrue(expected_key in response_dict, 'Key "{}" not found'.format(expected_key))
+            self.assertEqual(expected[expected_key], response_dict[expected_key], 'Key "{}", value mismatch.'.format(expected_key))
+
+    def test_with_data_comms_response_to_dict_data_as_tuple(self):
+        response = CommsResponse(
+            is_error=False,
+            response_code=200,
+            response_code_description='Ok',
+            response_data=None
+        )
+        response.response_data = (1, 2, 3, )
+        response_dict = response.to_dict()
+        self.assertIsNotNone(response_dict)
+        self.assertIsInstance(response_dict, dict)
+        self.assertTrue('Data' in response_dict)
+        self.assertIsInstance(response_dict['Data'], list)
+
+    def test_with_data_comms_response_to_dict_data_as_decimal(self):
+        response = CommsResponse(
+            is_error=False,
+            response_code=200,
+            response_code_description='Ok',
+            response_data=None
+        )
+        response.response_data = Decimal(22/7)
+        response_dict = response.to_dict()
+        self.assertIsNotNone(response_dict)
+        self.assertIsInstance(response_dict, dict)
+        self.assertTrue('Data' in response_dict)
+        self.assertIsInstance(response_dict['Data'], str)
+        self.assertTrue(response_dict['Data'].startswith('3.14'))
 
 
 if __name__ == '__main__':
