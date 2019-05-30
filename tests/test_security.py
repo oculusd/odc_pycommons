@@ -9,7 +9,7 @@ Usage with coverage:
 
 ::
 
-    $ coverage run --omit="odc_pycommons/__init__.py"  -m tests.test_security
+    $ coverage run --omit="*tests*,*venv*,odc_pycommons/__init__.py" -m tests.test_security
     $ coverage report -m
 """
 

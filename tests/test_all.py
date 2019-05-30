@@ -12,7 +12,7 @@ Usage
 
 ::
 
-    $ coverage run  --omit="*tests*" -m tests.test_all
+    $ coverage run  --omit="*tests*,*venv*" -m tests.test_all
     $ coverage report -m
 """
 
@@ -20,6 +20,15 @@ import unittest
 from tests.test_logging import TestOculusDLogger, TestGetUtcTimestamp
 from tests.test_security import TestInitFunctions, TestEmailValidation, TestStringValidation, TestDataValidator, TestStringDataValidator, TestNumberDataValidator
 from tests.test_persistence import TestGenericDataContainer, TestGenericIOProcessor, TestGenericIO, TestTextFileIO, TestValidateFileExistIOProcessor
+from tests.test_comms import TestPrepareResponseOnResponse
+from tests.test_comms import TestParseParametersAndJoinWithUri
+from tests.test_comms import TestGetFunction
+from tests.test_comms import TestJsonPostFunction
+from tests.test_comms import TestGetOculusdServiceYaml
+from tests.test_comms import TestGetServiceUri
+from tests.test_models import TestCommsRequest
+from tests.test_models import TestCommsRestFulRequest
+from tests.test_models import TestCommsResponse
 
 
 def suite():
@@ -173,6 +182,64 @@ def suite():
     suite.addTest(TestValidateFileExistIOProcessor('test_validate_file_exists_io_processor_test_non_existing_file_expect_exception'))
     suite.addTest(TestValidateFileExistIOProcessor('test_validate_file_exists_io_processor_test_invalid_generic_data_container_expect_exception'))
     suite.addTest(TestValidateFileExistIOProcessor('test_validate_file_exists_io_processor_test_invalid_generic_data_container_value_type_expect_exception'))
+
+    suite.addTest(TestPrepareResponseOnResponse('test_init_prepare_response_on_response'))
+    suite.addTest(TestPrepareResponseOnResponse('test_success_response_200'))
+    suite.addTest(TestPrepareResponseOnResponse('test_success_response_all'))
+    suite.addTest(TestPrepareResponseOnResponse('test_http_errors_response_all'))
+    suite.addTest(TestPrepareResponseOnResponse('test_unknown__response_700'))
+
+    suite.addTest(TestParseParametersAndJoinWithUri('test_no_parameters_test'))
+    suite.addTest(TestParseParametersAndJoinWithUri('test_one_parameters_test'))
+    suite.addTest(TestParseParametersAndJoinWithUri('test_two_parameters_test'))
+    suite.addTest(TestParseParametersAndJoinWithUri('test_three_parameters_test'))
+
+    suite.addTest(TestGetFunction('test_local_server_basic_get_01'))
+    suite.addTest(TestGetFunction('test_local_server_get_with_path_parameters'))
+    suite.addTest(TestGetFunction('test_local_server_get_with_bearer_token_01'))
+
+    suite.addTest(TestJsonPostFunction('test_local_server_basic_post_01'))
+    suite.addTest(TestJsonPostFunction('test_local_server_post_with_path_parameters'))
+    suite.addTest(TestJsonPostFunction('test_local_server_post_with_bearer_token_01'))
+    suite.addTest(TestJsonPostFunction('test_local_server_post_with_user_agent_01'))
+    suite.addTest(TestJsonPostFunction('test_local_server_post_fail_on_empty_request_body_01'))
+
+    suite.addTest(TestGetOculusdServiceYaml('test_read_local_data'))
+    suite.addTest(TestGetOculusdServiceYaml('test_get_oculusd_service_yaml'))
+
+    suite.addTest(TestGetServiceUri('test_get_service_uri_ping_service_01'))
+    suite.addTest(TestGetServiceUri('test_service_name_not_found_01'))
+
+    suite.addTest(TestCommsRequest('test_init_comms_request_01'))
+    suite.addTest(TestCommsRequest('test_init_comms_request_02'))
+    suite.addTest(TestCommsRequest('test_init_fail_on_none_uri_01'))
+    suite.addTest(TestCommsRequest('test_validate_valid_uri'))
+    suite.addTest(TestCommsRequest('test_validate_fail_on_uri_as_int'))
+    suite.addTest(TestCommsRequest('test_validate_fail_on_uri_to_short'))
+    suite.addTest(TestCommsRequest('test_validate_warn_on_trace_id_not_string'))
+    suite.addTest(TestCommsRequest('test_fail_on_dict_call'))
+
+    suite.addTest(TestCommsRestFulRequest('test_init_comms_rest_ful_request_01'))
+    suite.addTest(TestCommsRestFulRequest('test_validate_fail_on_data_is_none'))
+    suite.addTest(TestCommsRestFulRequest('test_validate_fail_on_data_is_string'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_data_to_dict_from_dict'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_data_to_dict_from_list'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_data_to_dict_from_tuple'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_to_dict_invalid_data_type_produces_warning'))
+    suite.addTest(TestCommsRestFulRequest('test_restful_data_to_json_from_dict'))
+
+    suite.addTest(TestCommsResponse('test_init_default_comms_response'))
+    suite.addTest(TestCommsResponse('test_fail_on_is_error_is_none'))
+    suite.addTest(TestCommsResponse('test_fail_on_is_error_is_not_bool'))
+    suite.addTest(TestCommsResponse('test_fail_on_response_code_is_none'))
+    suite.addTest(TestCommsResponse('test_fail_on_response_code_is_not_int'))
+    suite.addTest(TestCommsResponse('test_fail_on_response_code_description_is_not_str'))
+    suite.addTest(TestCommsResponse('test_fail_on_response_data_is_not_str'))
+    suite.addTest(TestCommsResponse('test_fail_on_trace_id_is_not_str'))
+    suite.addTest(TestCommsResponse('test_init_default_comms_response_to_dict'))
+    suite.addTest(TestCommsResponse('test_with_data_comms_response_to_dict'))
+    suite.addTest(TestCommsResponse('test_with_data_comms_response_to_dict_data_as_tuple'))
+    suite.addTest(TestCommsResponse('test_with_data_comms_response_to_dict_data_as_decimal'))
 
     return suite
 

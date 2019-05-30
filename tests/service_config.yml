@@ -1,0 +1,1617 @@
+openapi: 3.0.0
+info:
+  title: OculusD.com, Inc IoT Thing/Sensor API
+  description: Please refer to [the online documentation](https://www.oculusd.com/) for more detailed explination of the service
+  version: "2.0"
+  termsOfService: https://www.oculusd.com/service-terms-and-conditions
+  contact:
+    name: API Support
+    email: info@oculusd.com
+    url: https://www.oculusd.com/
+  license:
+    name: LGPL 3.0
+    url: https://raw.githubusercontent.com/oculusd/openapi-definitions/master/LICENSE
+
+servers:
+  - url: https://data-{region}.oculusd.com/v2
+    description: The IoT/IIoT thing/sensor API endpoints base path, version 2
+    variables:
+      region:
+        enum:
+          - us1
+        default: us1
+        description: Regional endpoints (Will be expanded in the near future)
+
+paths:
+  /ping:
+    x-env-override: OCULUSD_API_PING
+    x-descriptive-name: Ping
+    get:
+      summary: Returns a general response
+      description: This function is intended for checking service availability and response time. This is a public endpoint that does not require any authorisation. 
+      responses:
+        '200':
+          $ref: '#/components/responses/PingResponse'
+        '404':
+          description: As long as the function is unimplemented, you should receive an error 404
+        '520':
+            $ref: '#/components/responses/GenericErrorResponse'
+  
+  /register/root-account/{emailAddress}:
+    x-env-override: OCULUSD_API_RRA
+    x-descriptive-name: RegisterRootAccount
+    parameters:
+      - in: path
+        name: emailAddress
+        schema:
+          type: "string"
+        required: true
+        description: Valid e-mail address for the new root account. Each root account can only have one e-mail address linked to it ever.
+    post:
+      summary: Registers a new root account for the provided e-mail address
+      description: A root account is the primary account from where a organisation or even hobby maker can start to define things, sensors, users etc.
+      requestBody:
+        description: Additional information required for root account registration. By registering, you accept the terms and conditions as described at [https://www.oculusd.com/](https://www.oculusd.com/)
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RootAccountRegistrationSchema'
+      responses:
+        '201':
+          $ref: '#/components/responses/RootAccountRegisterSuccessResponse'
+        '520':
+          $ref: '#/components/responses/GenericErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /activate/root-account/{rootAccountId}/{activationToken}:
+    x-env-override: OCULUSD_API_ARA
+    x-descriptive-name: ActivateRootAccount
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Account ID as returned from the registration request
+      - in: path
+        name: activationToken
+        schema:
+          type: "string"
+        required: true
+        description: the token you received in your e-mail
+    post:
+      summary: Activate a PENDING root account
+      description: Because placing password or passsphrase strings in query arameters is a bad idea, supply it rather in the POST body. After a succesful activation, you should receive another email confirming the activation
+      requestBody:
+        description: Supply the same passphrase you used during registration.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountActivationSchema'
+      responses:
+          '201':
+            $ref: '#/components/responses/StandardResultResponse'
+          '520':
+            $ref: '#/components/responses/GenericErrorResponse'
+          '404':
+            $ref: '#/components/responses/NotFoundResponse'
+
+  /account/root-account/{rootAccountId}/authenticate:
+    x-env-override: OCULUSD_API_RAA
+    x-descriptive-name: AuthenticateRootAccount
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your root account
+    post:
+      summary: Authenticate a root account
+      description: Certain API calls require an authenticated root account token. This function allow you to authenticate your root account and will return a token on succesfull authentication.
+      requestBody:
+        description: Supply the same passphrase you used during registration.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RootAccountAuthenticationSchema'
+      responses:
+          '201':
+            $ref: '#/components/responses/StandardResultResponse'
+          '520':
+            $ref: '#/components/responses/GenericErrorResponse'
+          '404':
+            $ref: '#/components/responses/NotFoundResponse'
+
+  /account/root-account/{rootAccountId}/logout:
+    x-env-override: OCULUSD_API_RLO
+    x-descriptive-name: LogoutRootAccount
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your root account
+    get:
+      summary: No additional parameters is required and if the supplied token is still valid, the account will be logged out
+      description: This function is intended to force a cancelation of a valid authentication token - effectively logging out. The exact same response will always be returned, regardless if the token was valid or not or if the account was found or not etc.
+      security:
+        - rootAccountBearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/LogoutResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse' 
+        '520':
+            $ref: '#/components/responses/GenericErrorResponse'
+
+  /account/root-account/{rootAccountId}/request-reset:
+    x-env-override: OCULUSD_API_RRR
+    x-descriptive-name: RootAccountRequestReset
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your root account
+    get:
+      summary: Request a passphrase reset
+      description: This request will result in an e-mail being sent to the registered e-mail address for th root account containing a string required for the `reset` request
+      responses:
+        '200':
+          $ref: '#/components/responses/StandardResultResponse'
+        '520':
+            $ref: '#/components/responses/GenericErrorResponse'
+
+  /account/root-account/{rootAccountId}/reset/{resetToken}:
+    x-env-override: OCULUSD_API_RRT
+    x-descriptive-name: RootAccountReset
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your root account
+      - in: path
+        name: resetToken
+        schema:
+          type: "string"
+        required: true
+        description: The reset token received via e-mail after a `requestReset` request
+    post:
+      summary: Supply new credentials
+      description: The request body must contain the new passphrase. If the passphrase validation pass, any current root account session will be expired and the account will require the new credentials for the next authentication
+      requestBody:
+        description: Include the new passphrase in the request body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountResetPassphraseSchema'
+      responses:
+        '201':
+          $ref: '#/components/responses/StandardResultResponse'
+        '520':
+          $ref: '#/components/responses/GenericErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /account/root-account/{rootAccountId}/new-thing-group/{thingGroupName}:
+    x-env-override: OCULUSD_API_RANTG
+    x-descriptive-name: RootAccountNewThingGroup
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your root account
+      - in: path
+        name: thingGroupName
+        schema:
+          type: "string"
+        required: true
+        description: The desired name of the new thing group
+    post:
+      summary: Define a new thing group
+      description: All things need to belong to a thing group. When a new root account is created, there is 1 default thing group created called 'default'.
+      security:
+        - rootAccountBearerAuth: []
+      requestBody:
+        description: Define the new thing group with some basic information
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewThingGroupSchema'
+      responses:
+        '201':
+          $ref: '#/components/responses/NewThingGroupResponse'
+        '520':
+          $ref: '#/components/responses/GenericErrorResponse'
+        '402':
+          $ref: '#/components/responses/InsufficientFundsResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /accept-new-root-accounts:
+    x-env-override: OCULUSD_API_ANRA
+    x-descriptive-name: AcceptNewRootAccounts
+    get:
+      summary: Enquiry to see if new root accounts can be registered
+      description: In some cases the registration of new root accounts may be disabled. This query will confirm this status.
+      responses:
+        '200':
+          $ref: '#/components/responses/AcceptNewRootAccountsResponseSchema'
+        '404':
+          description: As long as the function is unimplemented, you should receive an error 404
+        '520':
+            $ref: '#/components/responses/GenericErrorResponse'
+
+  /thinggroup/root-account-context/{rootAccountId}/list-groups:
+    x-env-override: OCULUSD_API_RALTG
+    x-descriptive-name: RootAccountListThingGroups
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your root account ID
+    get:
+      summary: Get a list of Thing Groups
+      description: Only a maximum of 100 groups can be defined per account and once created they cannot be deleted. This API call will return all groups defined.
+      security:
+          - rootAccountBearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/ThingGroupListResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /thinggroup/root-account-context/{rootAccountId}/update/{thingGroupId}:
+    x-env-override: OCULUSD_API_RAUTG
+    x-descriptive-name: RootAccountUpdateThingGroup
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your root account ID
+      - in: path
+        name: thingGroupId
+        schema:
+          type: "string"
+        required: true
+        description: The thing group to update
+    post:
+      summary: Update a Thing Group
+      description: The root account can update either the name or the description of an existing thing group
+      security:
+          - rootAccountBearerAuth: []
+      requestBody:
+        description: Supply the details of the field that needs to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MultipleFieldUpdateSchema'
+      responses:
+          '201':
+            $ref: '#/components/responses/ThingGroupMaintenanceResponse'
+          '520':
+            $ref: '#/components/responses/GenericErrorResponse'
+          '403':
+            $ref: '#/components/responses/ForbiddenResponse'
+          '404':
+            $ref: '#/components/responses/NotFoundResponse'
+    
+  /thinggroup/root-account-context/{rootAccountId}/new-thing/{thingGroupId}:
+    x-env-override: OCULUSD_API_RANT
+    x-descriptive-name: RootAccountNewThing
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your root account ID
+      - in: path
+        name: thingGroupId
+        schema:
+          type: "string"
+        required: true
+        description: The thing group ID the new thing must be added to
+    post:
+      summary: Register a new thing
+      description: The root account can add a new thing to any defined group
+      security:
+        - rootAccountBearerAuth: []
+      requestBody:
+        description: New thing definition
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewThingRequestSchema'
+      responses:
+        '201':
+          $ref: '#/components/responses/NewThingResponse'
+        '520':
+          $ref: '#/components/responses/GenericErrorResponse'
+        '402':
+          $ref: '#/components/responses/InsufficientFundsResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /thing/root-account-context/{rootAccountId}/create-thing-session/{thingGroupId}/{thingId}:
+    x-env-override: OCULUSD_API_RATS
+    x-descriptive-name: RootAccountCreateNewThingSession
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your user account ID
+      - in: path
+        name: thingGroupId
+        schema:
+          type: "string"
+        required: true
+        description: The thing group ID of the thing
+      - in: path
+        name: thingId
+        schema:
+          type: "string"
+        required: true
+        description: The thing ID of the thing
+      - in: query
+        name: sessionTtl
+        schema:
+          type: "integer"
+        required: false
+        description: Optional time to live in seconds from `now()` for the session token. Default token expiry is the max. value of a 64-bit integer. The value of `now()` is the Unix timestamp of the API service side (UTC)
+    get:
+      summary: Create a thing session token
+      description: A thing session token is required for things to log sensor data. This call will invalidate any previous tokens and create a new token. A thing still using the old token will not be able to log sensor data until their token is updated with the new token returned by this API call. The root account can create session tokens for all things in the account.
+      security:
+        - rootAccountBearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/ThingTokenResponse'
+        '520':
+          $ref: '#/components/responses/GenericErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /thing/root-account-context/{rootAccountId}/delete-thing-session/{thingId}:
+    x-env-override: OCULUSD_API_RSDTS
+    x-descriptive-name: RootAccountDeleteThingSession
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your user account ID
+      - in: path
+        name: thingId
+        schema:
+          type: "string"
+        required: true
+        description: The thing ID of the thing that must be deleted
+    delete:
+      summary: Delete a thing session
+      description: Invalidate any active session token for the specified thing. The root account can invalidate any thing session.
+      security:
+        - rootAccountBearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/StandardResultResponse'
+        '520':
+          $ref: '#/components/responses/GenericErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /data/log/{thingId}:
+    x-env-override: OCULUSD_API_LOG1
+    x-descriptive-name: DataLogV1
+    parameters:
+      - in: path
+        name: thingId
+        schema:
+          type: "string"
+        required: true
+        description: The Thing ID
+    post:
+      summary: Register a new thing
+      description: The root account can add a new thing to any defined group
+      security:
+        - thingBearerAuth: []
+      requestBody:
+        description: Thing data capture record
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThingReadingSchema'
+      responses:
+        '201':
+          $ref: '#/components/responses/ThingReadingResponse'
+        '520':
+          $ref: '#/components/responses/GenericErrorResponse'
+        '402':
+          $ref: '#/components/responses/InsufficientFundsResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+
+  /data/query/root-account-context/{rootAccountId}/{thingGroupId}/{thingId}/simple:
+    x-env-override: OCULUSD_API_QS
+    x-descriptive-name: RootAccountQuerySimple
+    parameters:
+      - in: path
+        name: rootAccountId
+        schema:
+          type: "string"
+        required: true
+        description: Your user account ID
+      - in: path
+        name: thingGroupId
+        schema:
+          type: "string"
+        required: true
+        description: The thing group ID of the thing that must be queried
+      - in: path
+        name: thingId
+        schema:
+          type: "string"
+        required: true
+        description: The thing ID of the thing that must be queried
+      - in: query
+        name: limit
+        schema:
+          type: "integer"
+        required: false
+        description: Limit the number of records per axis to return. The default is 100
+      - in: query
+        name: notBefore
+        schema:
+          type: "integer"
+        required: false
+        description: The UTC Unix timestamp to use as the earliest timestamp from where to retrieve records. The service will consider `ReadingTimestamp` first (if avaiable) and then service side timestamps.
+      - in: query
+        name: notAfter
+        schema:
+          type: "integer"
+        required: false
+        description: The UTC Unix timestamp to use as the latest timestamp up to where records can be retrieved. The service will consider `ReadingTimestamp` first (if avaiable) and then service side timestamps.
+    get:
+      summary: Get captured data
+      description: Retrieve the records for the thing as captured between two time stamps. The default bahaviour without any query parameters provided is to return a maximum of 100 record entries per axis for all sensors for the last hour
+      security:
+        - rootAccountBearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/DataQuerySimpleResponse'
+        '520':
+          $ref: '#/components/responses/GenericErrorResponse'
+        '402':
+          $ref: '#/components/responses/InsufficientFundsResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+      
+
+components:
+
+  responses:
+
+    UnauthorizedError:
+      description: Access token is missing or invalid
+
+    NotFoundResponse:
+      description: If you run into this response, that the function has not yet been implemented for the choosen end-point or region
+
+    PingResponse:
+      description: A standard ping response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PingSchema'
+
+    StandardResultResponse:
+      description: A standard response response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardResponseSchema'
+
+    RootAccountRegisterSuccessResponse:
+      description: A root account registration successresponse response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RootAccountRegisterSuccessResponseSchema'
+
+    GenericErrorResponse:
+      description: All error messages will have a similar structure to the following. Use the trace ID for logging support requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GenericErrorResponseSchema'
+
+    LogoutResponse:
+      description: The response generated by a logout request - regardless of the actual logout result
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LogoutResponseSchema'
+
+    AcceptNewRootAccountsResponseSchema:
+      description:  The response generated by a logout request regardless of the actual logout result
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AcceptNewRootAccountsResponseSchema'
+
+    NewThingGroupResponse:
+      description:  The response will include the new thing group id which must be used in other requests that require the thing group ID
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewThingGroupResponseSchema'
+
+    UserAccountRegisterSuccessResponse:
+      description:  When the user account have succesfully been created, the following message will be returned
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserAccountRegisterSuccessResponseSchema'
+
+    UserListRequestSuccessResponse:
+      description:  Returning a list of user accounts with their statuses
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserListRequestSuccessResponseSchema'
+
+    ThingGroupListResponse:
+      description:  Returning a list of Thing Groups
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ThingGroupListResponseSchema'
+
+    ThingGroupMaintenanceResponse:
+      description:  After a thing group have an updated name and/or description, returning the new definition
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ThingGroupMaintenanceResponseSchema'
+
+    NewThingResponse:
+      description:  When the new thing have succesfully been created, the response will include the new Thing ID for the new thing
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NewThingResponseSchema'
+
+    ThingTokenResponse:
+      description:  When a new token is succesfully generated, the new token value will be returned to the client
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ThingTokenResponseSchema'
+
+    ThingTokenAuditResponse:
+      description:  When a new token is succesfully generated, the new token value will be returned to the client
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ThingTokenAuditResponseSchema'
+
+    ThingReadingResponse:
+      description: When a thing submits data and no serious errors occur, the reponse will confirm some basic data captured statistics.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ThingReadingResponseSchema'
+
+    DataQuerySimpleResponse:
+      description: When a thing submits data and no serious errors occur, the reponse will confirm some basic data captured statistics.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataQuerySimpleResponseSchema'
+
+    ForbiddenResponse:
+      description: Response generated when the requesting client does not have a valid token or sufficient permissions to access the resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ForbiddenResponseSchema'
+
+    InsufficientFundsResponse:
+      description: When logging data or performing actions that affect the account balance it may happen that there are no more funds available. In these cases, the following error will be returned. To resolve this error, the root account must be topped-up
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InsufficientFundsResponseSchema'
+  
+  schemas:
+
+    # ########################################
+    #
+    #             GENERAL SCHEMAS
+    #
+    # ########################################
+
+    PingSchema:
+      type: object
+      properties: 
+        Ping: 
+          type: "string"
+          description: A ping message from the server.
+          example: ok
+
+    StandardResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+          example: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: aaaa-bbbb-cccc-dddd
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: "Response message giving more information or guidance"
+        Data:
+          type: "string"
+          description: Data generated by the response
+          nullable: true
+          default: null
+          example: "Data that could be in the form of just a string or a more complex data structure. This example illustrates data as a normal string."
+      required:
+        - IsError
+        - ErrorMessage
+        - TraceId
+        - Message
+        - Data
+
+    LogoutResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+          example: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: aaaa-bbbb-cccc-dddd
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "string"
+          description: Data generated by the response
+          nullable: true
+          default: null
+          example: "The logout request was processed"
+      required:
+        - IsError
+        - ErrorMessage
+        - TraceId
+        - Message
+        - Data
+
+    GenericErrorResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: true
+          example: true
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: false
+          example: An error message explaining what went wrong
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: aaaa-bbbb-cccc-dddd
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "string"
+          description: Data generated by the response
+          nullable: true
+          default: null
+          example: null
+
+    ForbiddenResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: true
+          example: true
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: false
+          example: "You do not have permission to access this resource. This incident was logged with all available meta-data including your source IP address and client identification string."
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: aaaa-bbbb-cccc-dddd
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "string"
+          description: Data generated by the response
+          nullable: true
+          default: null
+          example: null
+
+    InsufficientFundsResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: true
+          example: true
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: false
+          example: "You have reached a zero balance on the root account. Please fund the root account to allow future requests to be processed."
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: aaaa-bbbb-cccc-dddd
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "string"
+          description: Data generated by the response
+          nullable: true
+          default: null
+          example: null
+
+    AccountActivationSchema:
+      type: object
+      properties:
+        Passphrase:
+          type: "string"
+          description: Use the passphrase you have registered with to confirm the activation
+          example: "This * Is @ An ! Example = Of + A , Very . Strong ? Password"
+
+    AccountResetPassphraseSchema:
+      type: object
+      properties:
+        Passphrase:
+          type: "string"
+          description: Use the passphrase you have registered with to confirm the activation
+          example: This * Is @ An ! Example = Of + A , Very . Strong ? Password*
+      required:
+        - Passphrase
+
+    FieldUpdateSchema:
+      type: object
+      properties:
+        FieldName:
+          type: "string"
+          description: The field name to which the update will be applied
+          enum: 
+            - ThingGroupName
+            - ThingGroupDescription
+          example: "ThingGroupName"
+        NewValue:
+          type: "string"
+          description: The new value, as a string. On the service side there will be an appropriate type conversion done if required.
+          example: Hobby Development Things
+      required:
+        - FieldName
+        - NewValue
+
+    MultipleFieldUpdateSchema:
+      type: object
+      properties:
+        UpdatedFields:
+          type: "array"
+          description: A list of fields to update
+          items:
+            $ref: '#/components/schemas/FieldUpdateSchema'
+      required:
+        - UpdatedFields
+
+    # ########################################
+    #
+    #      ROOT ACCOUNT SPECIFIC SCHEMAS
+    #
+    # ########################################
+
+    RootAccountRegistrationSchema:
+      type: object
+      properties:
+        AccountName:
+          type: "string"
+          description: A user defined name for the account - free form text, min 3 characters and max 255 characters in the ASCII range 32 to 126 (decimal)
+          example: My Company Name
+        PassPhrase:
+          type: "string"
+          description: A user defined passphrase, min 20 characters and max 1024 characters in the ASCII range 32 to 126 (decimal)
+          example: This * Is @ An ! Example = Of + A , Very . Strong ? Password
+      required:
+        - AccountName
+        - PassPhrase
+
+    RootAccountRegisterSuccessResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          default: null
+          example: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: xxxx-xxxx-xxxx-xxxx
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          example: "RootAccount created successfully"
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            RootAccountId:
+              type: "string"
+              description: The generated root account ID
+              example: raxxxxxxx
+            RootAccountStatus:
+              type: "string"
+              description: At this stage, this value should always be PENDING
+              example: PENDING
+        
+    AcceptNewRootAccountsResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          default: null
+          example: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: xxxx-xxxx-xxxx-xxxx
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          example: "We are open for new business"
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            CreateNewRootAccount:
+              type: "boolean"
+              description: New root accounts can only be registered is the value of this field is true
+              example: ThingTokenAuditResponse
+
+    RootAccountAuthenticationSchema:
+      type: object
+      properties:
+        Passphrase:
+          type: "string"
+          description: Use the passphrase you have registered with to confirm the activation
+          example: "This * Is @ An ! Example = Of + A , Very . Strong ? Password"
+        TokenTTL:
+          type: "integer"
+          description: The desired time to live for te token. For root accounts this is a maximum of 24 hours or 86400 seconds.
+          default: 86400
+          example: 600
+      required:
+        - Passphrase
+
+    UserListRequestSuccessResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          default: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            TotalUsers:
+              type: "integer"
+              description: The total number of users registered
+            ItemsPerPage:
+              type: "integer"
+              description: The maximum number of users returned per page
+            PageNr:
+              type: "integer"
+              description: The current page number
+            Users:
+              type: "array"
+              description: A list of users with their account status
+              items:
+                type: "string"
+                $ref: '#/components/schemas/UserStatusSchema'
+      example:
+        IsError: false
+        ErrorMessage: null
+        TraceId: xxxx-xxxx-xxxx-xxxx
+        Message: Some message
+        Data:
+          TotalUsers: 102
+          ItemsPerPage: 100
+          PageNr: 2
+          Users: [
+            {
+              "AccountEmailAddress": "user1@example.tld",
+              "AccountId": "ucxxxxxxxx",
+              "AccountStatus": "ACTIVE"
+            },
+            {
+              "AccountEmailAddress": "user2@example.tld",
+              "AccountId": "ucyyyyyyyy",
+              "AccountStatus": "PENDING"
+            }
+          ]
+
+    UserStatusSchema:
+      type: object
+      properties:
+        AccountEmailAddress:
+          type: "string"
+          description: The email address of this user account
+        AccountId:
+          type: "string"
+          description: A user account ID
+        AccountStatus:
+          type: "string"
+          description: A status. Refer to [the online documentation](https://docs.oculusd.com/index.html) for the full description of te various status values
+      example:
+        AccountEmailAddress: user1@example.tld
+        AccountId: ucxxxxxxxx
+        AccountStatus: ACTIVE
+
+    # ########################################
+    #
+    #      USER ACCOUNT SPECIFIC SCHEMAS
+    #
+    # ########################################
+
+    UserAccountRegistrationSchema:
+      type: object
+      properties:
+        RootAccountId:
+          type: "string"
+          description: The root account ID this user account must be linked to
+        ThingGroups:
+          type: "array"
+          description: The list of thing group IDs the user will be linked to. 
+          items:
+            type: "string"
+        PassPhrase:
+          type: "string"
+          description: A user defined passphrase, min 20 characters and max 1024 characters in the ASCII range 32 to 126 (decimal)
+      required:
+        - RootAccountId
+        - PassPhrase
+      example:
+        RootAccountId: raxxxxxxxx
+        ThingGroups: ["default", "tgxxxxxxxx"]
+        PassPhrase: This * Is @ An ! Example = Of + A , Very . Strong ? Password
+
+    UserAccountRegisterSuccessResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          default: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            UserAccountId:
+              type: "string"
+              description: The generated root account ID
+            UserAccountStatus:
+              type: "string"
+              description: At this stage, this value should always be PENDING
+      example:
+        IsError: false
+        ErrorMessage: null
+        TraceId: xxxx-xxxx-xxxx-xxxx
+        Message: Some message
+        Data:
+          UserAccountId: uaxxxxxxx
+          UserAccountStatus: PENDING
+
+    # ########################################
+    #
+    #             THING SCHEMAS
+    #
+    # ########################################
+
+    NewThingGroupSchema:
+      type: object
+      properties:
+        ThingGroupDescription:
+          type: "string"
+          description: Free form text you can use to describe the group - perhaps its purpose. Maximum 255 characters.
+          example: This group is for our lab things
+      required:
+        - ThingGroupDescription
+
+    ThingGroupSchema:
+      type: object
+      properties:
+        ThingGroupId: 
+          type: "string"
+          description: A service side ID generated when the new group is created
+          example: tgxxxxxxxx
+        ThingGroupName:
+          type: "string"
+          description: The user defined name of the group. The name cannot be "default". Names are case sensitive. Maximum 255 characters.
+          example: Prototype Development Things
+
+    ThingGroupListResponseSchema: 
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+          example: false
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: xxxx-xxxx-xxxx-xxxx
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            ThingGroups:
+              type: "array"
+              items:
+                $ref: '#/components/schemas/ThingGroupSchema'
+
+    ThingGroupMaintenanceResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+          example: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: xxxx-xxxx-xxxx-xxxx
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "object"
+          description: Data generated by the response
+          items:
+          $ref: '#/components/schemas/ThingGroupSchema'
+
+    NewThingGroupResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+          example: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: xxxx-xxxx-xxxx-xxxx
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            ThingGroupId:
+              type: "string"
+              description: New thing group ID as generated by the system
+              example: tgxxxxxxxx
+
+    SensorAxisSchema:
+      type: object
+      properties:
+        AxisName:
+          type: "string"
+          description: The name of an axis
+          example: "Temperature Reading Axis"
+        UserDefinedType:
+          type: "string"
+          description: Freeform text for a user to define a type they can later use in theur own applications. An example may be "Celsius"
+          example: "CELSIUS"
+          nullable: true
+        DataType:
+          type: "string"
+          enum:
+            - NUMBER
+            - STRING
+            - BOOLEAN
+          default: NUMBER
+          description: Define the service supported data type. The default type, if none is specified, is NUMBER
+          example: NUMBER
+      required:
+        - AxisName
+
+    SensorSchema:
+      type: object
+      properties:
+        SensorName:
+          type: "string"
+          description: A user defined name for the specific sensor.
+          example: "Temperature Probe"
+        SensorDescription:
+          type: "string"
+          description: A user defined description for the specific sensor.
+          example: "DS18B20 Temperature Probe Sensor"
+        SensorAxis:
+          type: "array"
+          items:
+            $ref: '#/components/schemas/SensorAxisSchema'
+      required:
+        - SensorName
+        - SensorAxis
+
+    ThingSchema:
+      type: object
+      properties:
+        ThingName:
+          type: "string"
+          description: A user defined name for the specific sensor.
+          example: "Arduino room temperature monitor thing"
+        ThingDescription:
+          type: "string"
+          description: A user defined description for the specific thing.
+          example: "A simple environmental temperature monitoring thing for my maker lab"
+        ThingMetaData:
+          type: "object"
+          description: A user defined dictionary of values. This will be persisted as JSON and returned as is on queries.
+        Sensors:
+          type: "array"
+          items:
+            $ref: '#/components/schemas/SensorSchema'
+      required:
+        - ThingName
+        - Sensors
+
+    NewThingRequestSchema:
+      type: object
+      properties:
+        Thing:
+          type: "object"
+#          additionalProperties:
+          $ref: '#/components/schemas/ThingSchema'
+      required:
+        - Thing
+
+    NewThingResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+          example: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: xxxx-xxxx-xxxx-xxxx
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            ThingId:
+              type: "string"
+              description: New thing ID as generated by the system
+              example: thingxxxxxxxx
+
+    ThingTokenResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+          example: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+          example: null 
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+          example: xxxx-xxxx-xxxx-xxxx
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+          example: null
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            ThingToken:
+              type: "string"
+              description: The current thing token to be used by things when logging sensor data
+              example: abcdefghijklmnopqrstuvwxyz
+            ThingTokenExpiry:
+              type: "integer"
+              description: The UTC Unix timestamp when this token will expire
+              example: 9223372036854775807
+
+    ThingTokenAuditResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            ThingToken:
+              type: "string"
+              description: The current thing token to be used by things when logging sensor data
+            ThingTokenExpiry:
+              type: "integer"
+              description: The UTC Unix timestamp when this token will expire
+            CreateContext:
+              type: "string"
+              description: The type of user account that created the token
+              enum:
+              - RootAccount
+              - UserAccount
+            AccountId:
+              type: "string"
+              description: The user account id or root account id that created the session
+            CreatedTimestamp:
+              type: "integer"
+              description: The UTC Unix timestamp when the token was created
+            TtlOverride:
+              type: "boolean"
+              description: If the token TTL was set, this value will be `true`
+            TtlOverrideValue:
+              type: "integer"
+              description: The integer value of the TTL override. If the override was not used, this value will be `null`
+              nullable: true
+      example:
+        IsError: false
+        ErrorMessage: null
+        TraceId: xxxx-xxxx-xxxx-xxxx
+        Message: null
+        Data:
+          ThingToken: abcdefghijklmnopqrstuvwxyz
+          ThingTokenExpiry: 9223372036854775807
+          CreateContext: UserAccount
+          AccountId: user123345678990
+          CreatedTimestamp: 1547180762
+          TtlOverride: false
+          TtlOverrideValue: null
+
+    # ########################################
+    #
+    #          DATA LOGGING SCHEMAS
+    #
+    # ########################################
+
+    AxisReadingSchema:
+      type: object
+      properties:
+        AxisName:
+          type: "string"
+          description: The name of an axis
+          example: "Temperature Reading Axis"
+        Data:
+          type: "string"
+          description: The captured data from the sensor axis
+          example: "23.56"
+      required:
+        - AxisName
+        - Data
+
+    SensorReadingSchema:
+      type: object
+      properties:
+        SensorName:
+          type: "string"
+          description: The name of the sesnor for which the axis readings are captured
+          example: "Environmental Sensor"
+        AxisReadings:
+          type: "array"
+          items:
+            $ref: '#/components/schemas/AxisReadingSchema'
+      required:
+        - SensorName
+        - AxisReadings
+
+    ThingReadingSchema:
+      type: object
+      properties:
+        Sensors:
+          type: "array"
+          items:
+            $ref: '#/components/schemas/SensorReadingSchema'
+        ReadingTimestamp:
+          type: "integer"
+          description: A Unix timestamp value generated by the thing (if possible)
+          example: 1547180762
+      required:
+        - Sensors
+
+    ThingReadingResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+        Data:
+          type: "object"
+          description: Data generated by the response
+          properties:
+            SensorsProcessed:
+              type: "integer"
+              description: The number of sensors that was processed
+            TotalRecordQty:
+              type: "integer"
+              description: The number of axis of all supplied sensors that was captured
+            SensorsIgnored:
+              type: "integer"
+              description: The number of sensors that was not processed (see Message for more info). Perhaps the sensor is no longer in the thing definition.
+            AxisIgnored:
+              type: "integer"
+              description: The number of axis that was not processed (see Message for more info). Perhaps the axis is no longer in the sensor definition
+      example:
+        IsError: false
+        ErrorMessage: null
+        TraceId: xxxx-xxxx-xxxx-xxxx
+        Message: null
+        Data:
+          SensorsProcessed: 2
+          TotalRecordQty: 5
+          SensorsIgnored: 0
+          AxisIgnored: 0
+
+    # ########################################
+    #
+    #          DATA QUERY SCHEMAS
+    #
+    # ########################################
+
+    DataQuerySimpleResponseSchema:
+      type: object
+      properties:
+        IsError:
+          type: "boolean"
+          description: Flag to indicate of an error occured
+          default: false
+        ErrorMessage:
+          type: "string"
+          description: If an error occured, this field will contain the error messaage
+          nullable: true
+          default: null
+        TraceId:
+          type: "string"
+          description: An API generated reference that consumers can quote when requesting support or logging errors
+        Message:
+          type: "string"
+          description: At times other meaningful messages may be passed along with a response. The intended purpose is to provide guidence. Consumers may find it useful, especially in the beginning, to them them understand the flow.
+          nullable: true
+        Data:
+          type: "object"
+          description: Captured data returned as CSV records
+          properties:
+            CsvHeaderLine:
+              type: "string"
+              description: The CSV header line
+            CsvData:
+              type: "array"
+              nullable: true
+              description: CSV line entries
+              items:
+                type: string  
+      example:
+        IsError: false
+        ErrorMessage: null
+        TraceId: xxxx-xxxx-xxxx-xxxx
+        Message: null
+        Data:
+          CsvHeaderLine: "sensor-name,axis-name,reading-timestamp,service-timestamp,data"
+          CsvData: [
+            "\"Sensor 1\",\"Axis 1\",null,1547180762,100",
+            "\"Sensor 1\",\"Axis 2\",null,1547180762,99",
+            "\"Sensor 2\",\"Axis 1\",null,1547180762,80",
+            "\"Sensor 2\",\"Axis 2\",null,1547180762,79",
+          ]
+
+  # ########################################
+  #
+  # SECURITY
+  #
+  # ########################################
+
+  securitySchemes:
+    rootAccountBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT 
+      description: RootAccount bearer token that will be a JWT token when authenticating (for now, calling '/account/root-account/{rootAccountId}/authenticate')
+
+    thingBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT 
+      description: Thing JWT token as generated by a `create-thing-session` type API call
