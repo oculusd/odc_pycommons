@@ -248,6 +248,11 @@ def suite():
     suite.addTest(TestApiJsonBodyElement('test_compound_init_01'))
     suite.addTest(TestApiJsonBodyElement('test_compound_to_dict_01'))
     suite.addTest(TestApiJsonBodyElement('test_compound_to_json_01'))
+    suite.addTest(TestApiJsonBodyElement('test_fail_on_none_value_01'))
+    suite.addTest(TestApiJsonBodyElement('test_fail_on_none_value_02'))
+    suite.addTest(TestApiJsonBodyElement('test_none_value_to_dict_01'))
+    suite.addTest(TestApiJsonBodyElement('test_none_value_to_json_01'))
+    suite.addTest(TestApiJsonBodyElement('test_set_value_01'))
 
     return suite
 

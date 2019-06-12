@@ -296,7 +296,33 @@ class TestApiJsonBodyElement(unittest.TestCase):
         self.assertIsNotNone(j)
         self.assertIsInstance(j, str)
         self.assertEqual(j, '{"a": {"b": "2"}}')
-        
+
+    def test_fail_on_none_value_01(self):
+        e = ApiJsonBodyElement(field_name='ElementName', start_value=None, can_be_none=False)
+        with self.assertRaises(Exception):
+            e.to_json()
+
+    def test_fail_on_none_value_02(self):
+        e = ApiJsonBodyElement(field_name='ElementName', start_value=None, can_be_none=False)
+        with self.assertRaises(Exception):
+            e.to_dict()
+
+    def test_none_value_to_dict_01(self):
+        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
+        d = e.to_dict()
+        self.assertIsNone(d['a'])
+
+    def test_none_value_to_json_01(self):
+        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
+        j = e.to_json()
+        self.assertEqual(j, '{"a": null}')
+
+    def test_set_value_01(self):
+        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
+        e.set_value(value=123)
+        self.assertIsNotNone(e.value)
+        self.assertIsInstance(e.value, int)
+        self.assertEqual(e.value, 123)
 
 
 if __name__ == '__main__':

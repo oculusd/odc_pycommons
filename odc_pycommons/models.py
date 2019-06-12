@@ -144,8 +144,7 @@ AXIS_DATA_TYPES = {
 def _template_field_to_json(
     input_field_name: str,
     input_field_value: object=None,
-    can_be_none: bool=True,
-    is_required: bool=False
+    can_be_none: bool=True
 )->str:
     return_value = ''
     if input_field_value is not None:
@@ -153,10 +152,8 @@ def _template_field_to_json(
             return_value = json.dumps({input_field_name: input_field_value.to_dict()})
         else:
             return_value = json.dumps({input_field_name: input_field_value})
-    elif can_be_none is False and is_required is True:
+    elif can_be_none is False and input_field_value is None:
         raise Exception('value cannot be none for field named "{}"'.format(input_field_name))
-    elif can_be_none is True and is_required is True:
-        return_value = json.dumps({input_field_name: None})
     else: 
         return_value = json.dumps({input_field_name: None})
     return return_value
@@ -165,8 +162,7 @@ def _template_field_to_json(
 def _template_field_to_dict(
     input_field_name: str,
     input_field_value: object=None,
-    can_be_none: bool=True,
-    is_required: bool=False
+    can_be_none: bool=True
 )->dict:
     return_value = {}
     if input_field_value is not None:
@@ -174,10 +170,8 @@ def _template_field_to_dict(
             return_value = {input_field_name: input_field_value.to_dict()}
         else:
             return_value = {input_field_name: input_field_value}
-    elif can_be_none is False and is_required is True:
+    elif can_be_none is False and input_field_value is None:
         raise Exception('value cannot be none for field named "{}"'.format(input_field_name))
-    elif can_be_none is True and is_required is True:
-        return_value = {input_field_name: None}
     else: 
         return_value = {input_field_name: None}
     return return_value
@@ -214,16 +208,14 @@ class ApiJsonBodyElement:
         return self.to_json_function(
             input_field_name=self.field_name,
             input_field_value=self.value,
-            can_be_none=self.can_be_none,
-            is_required=self.is_required
+            can_be_none=self.can_be_none
         )
 
     def to_dict(self)->dict:
         return self.to_dict_function(
             input_field_name=self.field_name,
             input_field_value=self.value,
-            can_be_none=self.can_be_none,
-            is_required=self.is_required
+            can_be_none=self.can_be_none
         )
 
 
