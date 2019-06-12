@@ -150,7 +150,7 @@ def _template_field_to_json(
     return_value = ''
     if input_field_value is not None:
         if isinstance(input_field_value, ApiJsonBodyElement):
-            return_value = json.dumps({input_field_name: input_field_value.default_to_json()})
+            return_value = json.dumps({input_field_name: input_field_value.to_dict()})
         else:
             return_value = json.dumps({input_field_name: input_field_value})
     elif can_be_none is False and is_required is True:
@@ -162,6 +162,27 @@ def _template_field_to_json(
     return return_value
 
 
+def _template_field_to_dict(
+    input_field_name: str,
+    input_field_value: object=None,
+    can_be_none: bool=True,
+    is_required: bool=False
+)->dict:
+    return_value = {}
+    if input_field_value is not None:
+        if isinstance(input_field_value, ApiJsonBodyElement):
+            return_value = {input_field_name: input_field_value.to_dict()}
+        else:
+            return_value = {input_field_name: input_field_value}
+    elif can_be_none is False and is_required is True:
+        raise Exception('value cannot be none for field named "{}"'.format(input_field_name))
+    elif can_be_none is True and is_required is True:
+        return_value = {input_field_name: None}
+    else: 
+        return_value = {input_field_name: None}
+    return return_value
+
+
 class ApiJsonBodyElement:
 
     def __init__(
@@ -170,24 +191,35 @@ class ApiJsonBodyElement:
         can_be_none: bool=True,
         default_value: object=None,
         start_value: object=None,
-        to_json_function: object=None,
+        to_json_function: object=_template_field_to_json,
+        to_dict_function: object=_template_field_to_dict,
         is_required: bool=False
     ):
         self.field_name = field_name
         self.can_be_none = can_be_none
         self.default_value = default_value
         self.value = start_value
-        self.to_json_function = _template_field_to_json
         if to_json_function is not None:
             if callable(to_json_function):
                 self.to_json_function = to_json_function
+        if to_dict_function is not None:
+            if callable(to_dict_function):
+                self.to_dict_function = to_dict_function
         self.is_required = is_required
 
     def set_value(self, value: object=None):
         self.value = value
 
-    def to_json(self):
+    def to_json(self)->str:
         return self.to_json_function(
+            input_field_name=self.field_name,
+            input_field_value=self.value,
+            can_be_none=self.can_be_none,
+            is_required=self.is_required
+        )
+
+    def to_dict(self)->dict:
+        return self.to_dict_function(
             input_field_name=self.field_name,
             input_field_value=self.value,
             can_be_none=self.can_be_none,
