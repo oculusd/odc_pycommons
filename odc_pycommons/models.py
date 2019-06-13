@@ -283,4 +283,73 @@ class ApiJsonBody:
         pass
 
 
+class AwsThingSensorAxis:
+
+    def __init__(self, axis_name: str, axis_data_type: str='NUMBER'):
+        self.axis_name = axis_name
+        self.axis_data_type = axis_data_type
+
+    def to_dict(self):
+        return {
+            'AxisName': self.axis_name,
+            'AxisDataType': self.axis_data_type,
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
+class AwsThingSensor:
+    
+    def __init__(self, sensor_name: str, axis_collection: list=list()):
+        self.sensor_name = sensor_name
+        self.axis_collection = list()
+        if len(axis_collection) > 0:
+            for axis in axis_collection:
+                if isinstance(axis, AwsThingSensorAxis):
+                    self.axis_collection.append(axis)
+                else:
+                    raise Exception('Found an axis configuration that is not a AwsThingSensorAxis object!')
+
+    def to_dict(self):
+        axis_list = list()
+        if len(self.axis_collection) > 0:
+            for axis in self.axis_collection:
+                axis_list.append(axis.to_dict())
+        return {
+            'SensorName': self.sensor_name,
+            'SensorAxisCollection': axis_list,
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
+
+class AwsThing:
+
+    def __init__(self, thing_name: str, thing_arn: str=None, sensors: list=list()):
+        self.thing_name = thing_name
+        self.thing_arn = thing_arn
+        self.sensors = list()
+        if len(sensors) > 0:
+            for sensor in sensors:
+                if isinstance(sensor, AwsThingSensor):
+                    self.sensors.append(sensor)
+                else:
+                    raise Exception('Found a sensor that is not a AwsThingSensor object!')
+
+    def to_dict(self):
+        sensor_list = list()
+        if len(self.sensors) > 0:
+            for sensor in self.sensors:
+                sensor_list.append(sensor.to_dict())
+        return {
+            'ThingName': self.thing_name,
+            'ThingArn': self.thing_arn,
+            'ThingSensors': sensor_list,
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
+
 # EOF
