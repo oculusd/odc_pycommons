@@ -9,6 +9,14 @@ guarantees are made in terms of production readiness at this stage.
 
 ## Installation
 
+### Quick Install
+
+Using pip:
+
+```bash
+$ pip install odc-pycommons
+```
+
 ### Installation from Source
 
 As with most other GitHub projects, the basic steps of clone, build and install 
@@ -56,7 +64,7 @@ licensing information.
 Installation:
 
 ```bash
-pip3 install email-validator pyyaml
+$ pip3 install email-validator pyyaml
 ```
 
 ## Need more help?
