@@ -18,6 +18,7 @@ import unittest
 from odc_pycommons.models import CommsRequest
 from odc_pycommons.models import CommsRestFulRequest
 from odc_pycommons.models import CommsResponse
+from odc_pycommons.models import ApiJsonBodyElement
 from decimal import Decimal
 
 
@@ -238,6 +239,90 @@ class TestCommsResponse(unittest.TestCase):
         self.assertTrue('Data' in response_dict)
         self.assertIsInstance(response_dict['Data'], str)
         self.assertTrue(response_dict['Data'].startswith('3.14'))
+
+
+class TestApiJsonBodyElement(unittest.TestCase):
+
+    def test_simple_init_01(self):
+        e = ApiJsonBodyElement(field_name='ElementName', start_value='ElementValue')
+        self.assertIsNotNone(e)
+        self.assertEqual(e.field_name, 'ElementName')
+        self.assertIsNotNone(e.value)
+        self.assertEqual(e.value, 'ElementValue')
+
+    def test_simple_to_dict_01(self):
+        e = ApiJsonBodyElement(field_name='ElementName', start_value='ElementValue')
+        d = e.to_dict()
+        self.assertIsNotNone(d)
+        self.assertIsInstance(d, dict)
+        self.assertTrue('ElementName' in d)
+        self.assertIsNotNone(d['ElementName'])
+        self.assertEqual(d['ElementName'], 'ElementValue')
+
+    def test_simple_to_json_01(self):
+        e = ApiJsonBodyElement(field_name='ElementName', start_value='ElementValue')
+        j = e.to_json()
+        self.assertIsNotNone(j)
+        self.assertIsInstance(j, str)
+        self.assertTrue('ElementName' in j)
+        self.assertTrue('ElementValue' in j)
+        self.assertEqual(j, '{"ElementName": "ElementValue"}')
+
+    def test_compound_init_01(self):
+        e2 = ApiJsonBodyElement(field_name='b', start_value='2')
+        e1 = ApiJsonBodyElement(field_name='a', start_value=e2)
+        self.assertIsNotNone(e1)
+        self.assertEqual(e1.field_name, 'a')
+        self.assertIsNotNone(e1.value)
+        self.assertIsInstance(e1.value, ApiJsonBodyElement)
+
+    def test_compound_to_dict_01(self):
+        e2 = ApiJsonBodyElement(field_name='b', start_value='2')
+        e1 = ApiJsonBodyElement(field_name='a', start_value=e2)
+        d = e1.to_dict()
+        self.assertIsNotNone(d)
+        self.assertIsInstance(d, dict)
+        self.assertTrue('a' in d)
+        self.assertIsNotNone(d['a'])
+        self.assertIsInstance(d['a'], dict)
+        self.assertTrue('b' in d['a'])
+        self.assertIsNotNone(d['a']['b'])
+        self.assertEqual(d['a']['b'], '2')
+
+    def test_compound_to_json_01(self):
+        e2 = ApiJsonBodyElement(field_name='b', start_value='2')
+        e1 = ApiJsonBodyElement(field_name='a', start_value=e2)
+        j = e1.to_json()
+        self.assertIsNotNone(j)
+        self.assertIsInstance(j, str)
+        self.assertEqual(j, '{"a": {"b": "2"}}')
+
+    def test_fail_on_none_value_01(self):
+        e = ApiJsonBodyElement(field_name='ElementName', start_value=None, can_be_none=False)
+        with self.assertRaises(Exception):
+            e.to_json()
+
+    def test_fail_on_none_value_02(self):
+        e = ApiJsonBodyElement(field_name='ElementName', start_value=None, can_be_none=False)
+        with self.assertRaises(Exception):
+            e.to_dict()
+
+    def test_none_value_to_dict_01(self):
+        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
+        d = e.to_dict()
+        self.assertIsNone(d['a'])
+
+    def test_none_value_to_json_01(self):
+        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
+        j = e.to_json()
+        self.assertEqual(j, '{"a": null}')
+
+    def test_set_value_01(self):
+        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
+        e.set_value(value=123)
+        self.assertIsNotNone(e.value)
+        self.assertIsInstance(e.value, int)
+        self.assertEqual(e.value, 123)
 
 
 if __name__ == '__main__':
