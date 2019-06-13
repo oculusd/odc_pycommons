@@ -9,7 +9,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='odc_pycommons',
-    version='0.3.1',
+    version='0.3.2',
     description='OculusD Python Commons Library',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -38,5 +38,5 @@ setup(
         'Say Thanks!': 'https://www.oculusd.com/',
         'Source': 'https://www.oculusd.com/',
     },
-    download_url='https://github.com/oculusd/odc_pycommons/archive/release-0.3.1.tar.gz',
+    download_url='https://github.com/oculusd/odc_pycommons/archive/release-0.3.2.tar.gz',
 )
