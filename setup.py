@@ -27,7 +27,7 @@ setup(
     ],
     keywords='cli library iot oculusd',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    install_requires=['pyyaml'],
+    install_requires=['pyyaml', 'email-validator'],
     extras_require={
         'dev': ['check-manifest'],
         'test': ['coverage'],
