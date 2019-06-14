@@ -31,6 +31,7 @@ from tests.test_models import TestCommsRestFulRequest
 from tests.test_models import TestCommsResponse
 from tests.test_models import TestAwsThingSensorAxis
 from tests.test_models import TestAwsThingSensor
+from tests.test_models import TestAwsThing
 
 
 def suite():
@@ -256,6 +257,16 @@ def suite():
     suite.addTest(TestAwsThingSensor('test_aws_thing_sensor_to_json_01'))
     suite.addTest(TestAwsThingSensor('test_aws_thing_sensor_to_json_02'))
     suite.addTest(TestAwsThingSensor('test_aws_thing_sensor_init_with_invalid_axis_collection'))
+
+    suite.addTest(TestAwsThing('test_aws_thing_init_01'))
+    suite.addTest(TestAwsThing('test_aws_thing_init_02'))
+    suite.addTest(TestAwsThing('test_aws_thing_init_03'))
+    suite.addTest(TestAwsThing('test_aws_thing_init_fail_with_invalid_sensor'))
+    suite.addTest(TestAwsThing('test_aws_thing_init_fail_with_valid_sensor_and_missing_axis'))
+    suite.addTest(TestAwsThing('test_aws_thing_init_fail_with_duplicate_sensor_names'))
+    suite.addTest(TestAwsThing('test_aws_thing_init_fail_with_invalid_sensor_collection'))
+    suite.addTest(TestAwsThing('test_aws_thing_to_dict'))
+    suite.addTest(TestAwsThing('test_aws_thing_to_json'))
 
     return suite
 

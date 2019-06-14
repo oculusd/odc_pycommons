@@ -400,6 +400,197 @@ class TestAwsThingSensor(unittest.TestCase):
             AwsThingSensor(sensor_name='sensor1', axis_collection=sensor_axis_collection)
 
 
+class TestAwsThing(unittest.TestCase):
+
+    def test_aws_thing_init_01(self):
+        thing = AwsThing(thing_name='thing1')
+        self.assertIsNotNone(thing)
+        self.assertIsInstance(thing, AwsThing)
+        self.assertEqual(thing.thing_name, 'thing1')
+        self.assertIsNone(thing.thing_arn)
+        self.assertIsNotNone(thing.sensors)
+        self.assertIsInstance(thing.sensors, list)
+        self.assertEqual(len(thing.sensors), 0)
+
+    def test_aws_thing_init_02(self):
+        thing = AwsThing(thing_name='thing1', thing_arn='arn1')
+        self.assertIsNotNone(thing)
+        self.assertIsInstance(thing, AwsThing)
+        self.assertEqual(thing.thing_name, 'thing1')
+        self.assertIsNotNone(thing.thing_arn)
+        self.assertIsInstance(thing.thing_arn, str)
+        self.assertEqual(thing.thing_arn, 'arn1')
+        self.assertIsNotNone(thing.sensors)
+        self.assertIsInstance(thing.sensors, list)
+        self.assertEqual(len(thing.sensors), 0)
+
+    def test_aws_thing_init_03(self):
+        sensor1 = AwsThingSensor(
+            sensor_name='sensor1',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+                AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+            ]
+        )
+        sensor2 = AwsThingSensor(
+            sensor_name='sensor2',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+            ]
+        )
+        thing = AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+        self.assertIsNotNone(thing)
+        self.assertIsInstance(thing, AwsThing)
+        self.assertEqual(thing.thing_name, 'thing1')
+        self.assertIsNotNone(thing.thing_arn)
+        self.assertIsInstance(thing.thing_arn, str)
+        self.assertEqual(thing.thing_arn, 'arn1')
+        self.assertIsNotNone(thing.sensors)
+        self.assertIsInstance(thing.sensors, list)
+        self.assertEqual(len(thing.sensors), 2)
+        for sensor in thing.sensors:
+            self.assertIsInstance(sensor, AwsThingSensor)
+
+    def test_aws_thing_init_fail_with_invalid_sensor(self):
+        sensor1 = AwsThingSensor(
+            sensor_name='sensor1',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+                AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+            ]
+        )
+        sensor2 = 123
+        with self.assertRaises(Exception):
+            AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+
+    def test_aws_thing_init_fail_with_valid_sensor_and_missing_axis(self):
+        sensor1 = AwsThingSensor(
+            sensor_name='sensor1',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+                AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+            ]
+        )
+        sensor2 = AwsThingSensor(
+            sensor_name='sensor2'
+        )
+        with self.assertRaises(Exception):
+            AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+
+    def test_aws_thing_init_fail_with_duplicate_sensor_names(self):
+        sensor1 = AwsThingSensor(
+            sensor_name='sensor1',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+                AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+            ]
+        )
+        sensor2 = AwsThingSensor(
+            sensor_name='sensor1',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1')
+            ]
+        )
+        with self.assertRaises(Exception):
+            AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+
+    def test_aws_thing_init_fail_with_invalid_sensor_collection(self):
+        with self.assertRaises(Exception):
+            AwsThing(thing_name='thing1', thing_arn='arn1', sensors=123)
+
+    def test_aws_thing_to_dict(self):
+        sensor1 = AwsThingSensor(
+            sensor_name='sensor1',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+                AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+            ]
+        )
+        sensor2 = AwsThingSensor(
+            sensor_name='sensor2',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+            ]
+        )
+        thing = AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+        d = thing.to_dict()
+        self.assertIsNotNone(d)
+        self.assertIsInstance(d, dict)
+        self.assertEqual(len(d), 3)
+        self.assertTrue('ThingName' in d)
+        self.assertTrue('ThingArn' in d)
+        self.assertTrue('ThingSensors' in d)
+        self.assertIsInstance(d['ThingName'], str)
+        self.assertIsInstance(d['ThingArn'], str)
+        self.assertIsInstance(d['ThingSensors'], list)
+        self.assertEqual(d['ThingName'], 'thing1')
+        self.assertEqual(d['ThingArn'], 'arn1')
+        for sensor in d['ThingSensors']:
+            self.assertIsNotNone(sensor)
+            self.assertIsInstance(sensor, dict)
+            self.assertEqual(len(sensor), 2)
+            self.assertTrue('SensorName' in sensor)
+            self.assertTrue('SensorAxisCollection' in sensor)
+            self.assertIsNotNone(sensor['SensorName'])
+            self.assertIsNotNone(sensor['SensorAxisCollection'])
+            self.assertIsInstance(sensor['SensorAxisCollection'], list)
+            self.assertTrue(len(sensor['SensorAxisCollection']) > 0)
+            for axis in sensor['SensorAxisCollection']:
+                self.assertIsNotNone(axis)
+                self.assertIsInstance(axis, dict)
+                self.assertEqual(len(axis), 2)
+                self.assertTrue('AxisName' in axis)
+                self.assertTrue('AxisDataType' in axis)
+
+    def test_aws_thing_to_json(self):
+        sensor1 = AwsThingSensor(
+            sensor_name='sensor1',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+                AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+            ]
+        )
+        sensor2 = AwsThingSensor(
+            sensor_name='sensor2',
+            axis_collection=[
+                AwsThingSensorAxis(axis_name='axis1'),
+            ]
+        )
+        thing = AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+        j = thing.to_json()
+        self.assertIsNotNone(j)
+        self.assertIsInstance(j, str)
+        self.assertTrue(len(j) > 0)
+        d = json.loads(j)
+        self.assertIsNotNone(d)
+        self.assertIsInstance(d, dict)
+        self.assertEqual(len(d), 3)
+        self.assertTrue('ThingName' in d)
+        self.assertTrue('ThingArn' in d)
+        self.assertTrue('ThingSensors' in d)
+        self.assertIsInstance(d['ThingName'], str)
+        self.assertIsInstance(d['ThingArn'], str)
+        self.assertIsInstance(d['ThingSensors'], list)
+        self.assertEqual(d['ThingName'], 'thing1')
+        self.assertEqual(d['ThingArn'], 'arn1')
+        for sensor in d['ThingSensors']:
+            self.assertIsNotNone(sensor)
+            self.assertIsInstance(sensor, dict)
+            self.assertEqual(len(sensor), 2)
+            self.assertTrue('SensorName' in sensor)
+            self.assertTrue('SensorAxisCollection' in sensor)
+            self.assertIsNotNone(sensor['SensorName'])
+            self.assertIsNotNone(sensor['SensorAxisCollection'])
+            self.assertIsInstance(sensor['SensorAxisCollection'], list)
+            self.assertTrue(len(sensor['SensorAxisCollection']) > 0)
+            for axis in sensor['SensorAxisCollection']:
+                self.assertIsNotNone(axis)
+                self.assertIsInstance(axis, dict)
+                self.assertEqual(len(axis), 2)
+                self.assertTrue('AxisName' in axis)
+                self.assertTrue('AxisDataType' in axis)
+
+
 if __name__ == '__main__':
     unittest.main()
 

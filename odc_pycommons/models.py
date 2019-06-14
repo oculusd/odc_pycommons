@@ -190,10 +190,17 @@ class AwsThing:
         self.thing_name = thing_name
         self.thing_arn = thing_arn
         self.sensors = list()
+        self.sensor_names = list()
         if len(sensors) > 0:
             for sensor in sensors:
                 if isinstance(sensor, AwsThingSensor):
-                    self.sensors.append(sensor)
+                    if sensor.sensor_name in self.sensor_names:
+                        raise Exception('Sensor named "{}" already defined'.format(sensor.sensor_name))
+                    if len(sensor.axis_collection) > 0:
+                        self.sensors.append(sensor)
+                        self.sensor_names.append(sensor.sensor_name)
+                    else:
+                        raise Exception('Every sensor must have at least 1 axis define. Sensor "{}" appears to have none.'.format(sensor.sensor_name))
                 else:
                     raise Exception('Found a sensor that is not a AwsThingSensor object!')
 
