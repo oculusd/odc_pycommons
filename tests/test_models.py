@@ -15,10 +15,13 @@ Usage with coverage:
 """
 
 import unittest
+import json
 from odc_pycommons.models import CommsRequest
 from odc_pycommons.models import CommsRestFulRequest
 from odc_pycommons.models import CommsResponse
-from odc_pycommons.models import ApiJsonBodyElement
+from odc_pycommons.models import AwsThingSensorAxis
+from odc_pycommons.models import AwsThingSensor
+from odc_pycommons.models import AwsThing
 from decimal import Decimal
 
 
@@ -241,88 +244,160 @@ class TestCommsResponse(unittest.TestCase):
         self.assertTrue(response_dict['Data'].startswith('3.14'))
 
 
-class TestApiJsonBodyElement(unittest.TestCase):
+class TestAwsThingSensorAxis(unittest.TestCase):
 
-    def test_simple_init_01(self):
-        e = ApiJsonBodyElement(field_name='ElementName', start_value='ElementValue')
-        self.assertIsNotNone(e)
-        self.assertEqual(e.field_name, 'ElementName')
-        self.assertIsNotNone(e.value)
-        self.assertEqual(e.value, 'ElementValue')
+    def test_aws_thing_sensor_axis_init_01(self):
+        axis = AwsThingSensorAxis(axis_name='axis1')
+        self.assertIsNotNone(axis)
+        self.assertIsInstance(axis, AwsThingSensorAxis)
+        self.assertEqual(axis.axis_name, 'axis1')
+        self.assertEqual(axis.axis_data_type, 'STRING')
 
-    def test_simple_to_dict_01(self):
-        e = ApiJsonBodyElement(field_name='ElementName', start_value='ElementValue')
-        d = e.to_dict()
+    def test_aws_thing_sensor_axis_init_with_valid_type(self):
+        axis = AwsThingSensorAxis(axis_name='axis1', axis_data_type='NUMBER')
+        self.assertIsNotNone(axis)
+        self.assertIsInstance(axis, AwsThingSensorAxis)
+        self.assertEqual(axis.axis_name, 'axis1')
+        self.assertEqual(axis.axis_data_type, 'NUMBER')
+
+    def test_aws_thing_sensor_axis_init_with_invalid_type(self):
+        with self.assertRaises(Exception):
+            AwsThingSensorAxis(axis_name='axis1', axis_data_type='some-funny-type')
+
+    def test_aws_thing_sensor_axis_to_dict(self):
+        axis = AwsThingSensorAxis(axis_name='axis1')
+        d = axis.to_dict()
         self.assertIsNotNone(d)
         self.assertIsInstance(d, dict)
-        self.assertTrue('ElementName' in d)
-        self.assertIsNotNone(d['ElementName'])
-        self.assertEqual(d['ElementName'], 'ElementValue')
+        self.assertTrue(len(d) == 2)
+        self.assertTrue('AxisName' in d)
+        self.assertTrue('AxisDataType' in d)
+        self.assertEqual(d['AxisName'], 'axis1')
+        self.assertEqual(d['AxisDataType'], 'STRING')
 
-    def test_simple_to_json_01(self):
-        e = ApiJsonBodyElement(field_name='ElementName', start_value='ElementValue')
-        j = e.to_json()
+    def test_aws_thing_sensor_axis_to_json(self):
+        axis = AwsThingSensorAxis(axis_name='axis1')
+        j = axis.to_json()
         self.assertIsNotNone(j)
         self.assertIsInstance(j, str)
-        self.assertTrue('ElementName' in j)
-        self.assertTrue('ElementValue' in j)
-        self.assertEqual(j, '{"ElementName": "ElementValue"}')
+        self.assertTrue(len(j) > 0)
+        d = json.loads(j)
+        self.assertTrue(len(d) == 2)
+        self.assertTrue('AxisName' in d)
+        self.assertTrue('AxisDataType' in d)
+        self.assertEqual(d['AxisName'], 'axis1')
+        self.assertEqual(d['AxisDataType'], 'STRING')
 
-    def test_compound_init_01(self):
-        e2 = ApiJsonBodyElement(field_name='b', start_value='2')
-        e1 = ApiJsonBodyElement(field_name='a', start_value=e2)
-        self.assertIsNotNone(e1)
-        self.assertEqual(e1.field_name, 'a')
-        self.assertIsNotNone(e1.value)
-        self.assertIsInstance(e1.value, ApiJsonBodyElement)
 
-    def test_compound_to_dict_01(self):
-        e2 = ApiJsonBodyElement(field_name='b', start_value='2')
-        e1 = ApiJsonBodyElement(field_name='a', start_value=e2)
-        d = e1.to_dict()
+class TestAwsThingSensor(unittest.TestCase):
+
+    def test_aws_thing_sensor_init_01(self):
+        sensor = AwsThingSensor(sensor_name='sensor1')
+        self.assertIsNotNone(sensor)
+        self.assertIsInstance(sensor, AwsThingSensor)
+        self.assertEqual(sensor.sensor_name, 'sensor1')
+        self.assertIsInstance(sensor.axis_collection, list)
+        self.assertTrue(len(sensor.axis_collection) == 0) 
+
+    def test_aws_thing_sensor_init_02(self):
+        sensor_axis_collection = [
+            AwsThingSensorAxis(axis_name='axis1'),
+            AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+        ]
+        sensor = AwsThingSensor(sensor_name='sensor1', axis_collection=sensor_axis_collection)
+        self.assertIsInstance(sensor.axis_collection, list)
+        self.assertTrue(len(sensor.axis_collection) == 2)
+        for axis in sensor.axis_collection:
+            self.assertIsInstance(axis, AwsThingSensorAxis)
+
+    def test_aws_thing_sensor_to_dict_01(self):
+        sensor = AwsThingSensor(sensor_name='sensor1')
+        d = sensor.to_dict()
         self.assertIsNotNone(d)
         self.assertIsInstance(d, dict)
-        self.assertTrue('a' in d)
-        self.assertIsNotNone(d['a'])
-        self.assertIsInstance(d['a'], dict)
-        self.assertTrue('b' in d['a'])
-        self.assertIsNotNone(d['a']['b'])
-        self.assertEqual(d['a']['b'], '2')
+        self.assertEqual(len(d), 2)
+        self.assertTrue('SensorName' in d)
+        self.assertTrue('SensorAxisCollection' in d)
+        self.assertIsNotNone(d['SensorName'])
+        self.assertIsNotNone(d['SensorAxisCollection'])
+        self.assertEqual(d['SensorName'], 'sensor1')
+        self.assertIsInstance(d['SensorAxisCollection'], list)
+        self.assertEqual(len(d['SensorAxisCollection']), 0)
 
-    def test_compound_to_json_01(self):
-        e2 = ApiJsonBodyElement(field_name='b', start_value='2')
-        e1 = ApiJsonBodyElement(field_name='a', start_value=e2)
-        j = e1.to_json()
+    def test_aws_thing_sensor_to_dict_02(self):
+        sensor_axis_collection = [
+            AwsThingSensorAxis(axis_name='axis1'),
+            AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+        ]
+        sensor = AwsThingSensor(sensor_name='sensor1', axis_collection=sensor_axis_collection)
+        d = sensor.to_dict()
+        self.assertIsNotNone(d)
+        self.assertIsInstance(d, dict)
+        self.assertEqual(len(d), 2)
+        self.assertTrue('SensorName' in d)
+        self.assertTrue('SensorAxisCollection' in d)
+        self.assertIsNotNone(d['SensorName'])
+        self.assertIsNotNone(d['SensorAxisCollection'])
+        self.assertEqual(d['SensorName'], 'sensor1')
+        self.assertIsInstance(d['SensorAxisCollection'], list)
+        self.assertEqual(len(d['SensorAxisCollection']), 2)
+        for axis in d['SensorAxisCollection']:
+            self.assertIsNotNone(axis)
+            self.assertIsInstance(axis, dict)
+            self.assertEqual(len(axis), 2)
+            self.assertTrue('AxisName' in axis)
+            self.assertTrue('AxisDataType' in axis)
+
+    def test_aws_thing_sensor_to_json_01(self):
+        sensor = AwsThingSensor(sensor_name='sensor1')
+        j = sensor.to_json()
         self.assertIsNotNone(j)
         self.assertIsInstance(j, str)
-        self.assertEqual(j, '{"a": {"b": "2"}}')
+        self.assertTrue(len(j) > 0)
+        d = json.loads(j)
+        self.assertTrue('SensorName' in d)
+        self.assertTrue('SensorAxisCollection' in d)
+        self.assertIsNotNone(d['SensorName'])
+        self.assertIsNotNone(d['SensorAxisCollection'])
+        self.assertEqual(d['SensorName'], 'sensor1')
+        self.assertIsInstance(d['SensorAxisCollection'], list)
+        self.assertEqual(len(d['SensorAxisCollection']), 0)
 
-    def test_fail_on_none_value_01(self):
-        e = ApiJsonBodyElement(field_name='ElementName', start_value=None, can_be_none=False)
+    def test_aws_thing_sensor_to_json_02(self):
+        sensor_axis_collection = [
+            AwsThingSensorAxis(axis_name='axis1'),
+            AwsThingSensorAxis(axis_name='axis2', axis_data_type='NUMBER')
+        ]
+        sensor = AwsThingSensor(sensor_name='sensor1', axis_collection=sensor_axis_collection)
+        j = sensor.to_json()
+        self.assertIsNotNone(j)
+        self.assertIsInstance(j, str)
+        self.assertTrue(len(j) > 0)
+        d = json.loads(j)
+        self.assertIsNotNone(d)
+        self.assertIsInstance(d, dict)
+        self.assertEqual(len(d), 2)
+        self.assertTrue('SensorName' in d)
+        self.assertTrue('SensorAxisCollection' in d)
+        self.assertIsNotNone(d['SensorName'])
+        self.assertIsNotNone(d['SensorAxisCollection'])
+        self.assertEqual(d['SensorName'], 'sensor1')
+        self.assertIsInstance(d['SensorAxisCollection'], list)
+        self.assertEqual(len(d['SensorAxisCollection']), 2)
+        for axis in d['SensorAxisCollection']:
+            self.assertIsNotNone(axis)
+            self.assertIsInstance(axis, dict)
+            self.assertEqual(len(axis), 2)
+            self.assertTrue('AxisName' in axis)
+            self.assertTrue('AxisDataType' in axis)
+
+    def test_aws_thing_sensor_init_with_invalid_axis_collection(self):
+        sensor_axis_collection = [
+            AwsThingSensorAxis(axis_name='axis1'),
+            123
+        ]
         with self.assertRaises(Exception):
-            e.to_json()
-
-    def test_fail_on_none_value_02(self):
-        e = ApiJsonBodyElement(field_name='ElementName', start_value=None, can_be_none=False)
-        with self.assertRaises(Exception):
-            e.to_dict()
-
-    def test_none_value_to_dict_01(self):
-        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
-        d = e.to_dict()
-        self.assertIsNone(d['a'])
-
-    def test_none_value_to_json_01(self):
-        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
-        j = e.to_json()
-        self.assertEqual(j, '{"a": null}')
-
-    def test_set_value_01(self):
-        e = ApiJsonBodyElement(field_name='a', start_value=None, can_be_none=True)
-        e.set_value(value=123)
-        self.assertIsNotNone(e.value)
-        self.assertIsInstance(e.value, int)
-        self.assertEqual(e.value, 123)
+            AwsThingSensor(sensor_name='sensor1', axis_collection=sensor_axis_collection)
 
 
 if __name__ == '__main__':
