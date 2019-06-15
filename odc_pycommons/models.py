@@ -262,7 +262,6 @@ class StateAlert:
 
     def evaluate_state(
         self, 
-        aws_sns_client: object,
         state: AwsSensorAxisState,
         input_value: object=None,
         event_logger: OculusDLogger=OculusDLogger()
@@ -279,13 +278,13 @@ class StateAlert:
 
 class AwsSnsStateAlert(StateAlert):
 
-    def __init__(self, sns_topic_arn):
+    def __init__(self, sns_topic_arn, aws_sns_client: object):
         self.sns_topic_arn = sns_topic_arn
+        self.aws_sns_client = aws_sns_client
         super().__init__()
 
     def evaluate_state(
         self, 
-        aws_sns_client: object,
         state: AwsSensorAxisState,
         input_value: object=None,
         event_logger: OculusDLogger=OculusDLogger()
@@ -297,7 +296,7 @@ class AwsSnsStateAlert(StateAlert):
                     input_value_abbreviated = '{}'.format(input_value)
                     if len(input_value_abbreviated) > 10:
                         input_value_abbreviated = '{}... (shortened)'.format(input_value_abbreviated[0:10])
-                    response = aws_sns_client.publish(
+                    response = self.aws_sns_client.publish(
                         TopicArn=self.sns_topic_arn,
                         Message='string',
                         Subject='[STATE_ALERT] {} - severity "{}"'.format(state.state_name, state.severity),
@@ -339,17 +338,83 @@ class AwsThingSensorAxis:
         self.last_reading_value = None
         self.last_reading_timestamp_utc = 0
 
-    def record_axis_reading(self, reading_value: object):
-        pass
+    def record_axis_reading(self, reading_value: object, reading_timestamp: int=get_utc_timestamp()):
+        self.last_reading_value = reading_value
+        self.last_reading_timestamp_utc = reading_timestamp
 
-    def to_dict(self):
+    def to_dict(self, include_axis_state_definitions: bool=False, include_last_values: bool=False):
         return {
             'AxisName': self.axis_name,
             'AxisDataType': self.axis_data_type,
         }
 
-    def to_json(self):
-        return json.dumps(self.to_dict())
+    def to_json(self, include_axis_state_definitions: bool=False, include_last_values: bool=False):
+        return json.dumps(self.to_dict(include_axis_state_definitions=include_axis_state_definitions, include_last_values=include_last_values))
+
+
+class SensorStateReader:
+
+    """
+        This is the part a user must implement that reads actual data from a sensor...
+    """
+
+    def __init__(self, state_reader_name: str, event_logger: OculusDLogger=OculusDLogger()):
+        self.state_reader_name = state_reader_name
+        self.event_logger = event_logger
+
+    def _check_all_states(self, axis_name: str, sensor_axis: list=list(), input_value: object=None, reading_timestamp: int=get_utc_timestamp()):
+        for axis in sensor_axis:
+            if axis_name == axis.axis_name:
+                axis.record_axis_reading(reading_value=input_value, reading_timestamp=reading_timestamp)
+                try:
+                    for axis_state in axis.axis_states:
+                        if axis_state.evaluate_value(input_value=input_value) is True:
+                            axis.axis_state_alert_processor.evaluate_state(
+                                state=axis_state,
+                                input_value=input_value,
+                                event_logger=self.event_logger
+                            )
+                except:
+                    self.event_logger('EXCEPTION: {}'.format(traceback.format_exc()))
+
+    def read_state(self, sensor_axis: list=list()):
+        """
+            Implementation guidelines
+            =========================
+
+            You need to add your code here that will retrieve a set of values for your defined axis.
+
+            Then, when all is done, call _check_all_states() as such (assuming your Thing was defined as thing):
+
+                class MyTemperatureSensorReader(SensorStateReader):
+
+                    def __init__(self):
+                        super().__init__(state_reader_name='MyTemperatureSensorReader')
+
+                    def read_state(self, sensor_axis: list=list()):
+                        # ... your implementation... safe each axis reading result in read_value
+                        reading_timestamp = get_utc_timestamp()
+                        for axis in sensor_axis:
+                            read_value = my_sensor_axis_data_capture_function() # ..... read a value from your sensor axis
+                            self._check_all_states(
+                                axis_name=axis.axis_name,
+                                sensor_axis=sensor_axis,
+                                input_value=read_value,
+                                reading_timestamp=reading_timestamp
+                            )
+
+        """
+        self.event_logger.info('READ STATE TRIGGERED for "{}"'.format(self.state_reader_name))
+        reading_timestamp = get_utc_timestamp()
+        for axis in sensor_axis:
+            read_value = None
+            self._check_all_states(
+                axis_name=axis.axis_name,
+                sensor_axis=sensor_axis,
+                input_value=read_value,
+                reading_timestamp=reading_timestamp
+            )
+
 
 class AwsThingSensor:
     
@@ -357,7 +422,8 @@ class AwsThingSensor:
         self,
         sensor_name: str,
         axis_collection: list=list(),
-        sensor_value_reader_implementation: object=None # TODO - need to create a definition for this implementation that will loop through axis and record readings for every axis. For each reading, the state matching processing should also kick in.
+        sensor_value_reader_implementation: SensorStateReader=SensorStateReader(state_reader_name='DefaultSensorStateReader'),
+        sensor_reader_trigger_interval: int=300,
     ):
         self.sensor_name = sensor_name
         self.axis_collection = list()
@@ -367,6 +433,19 @@ class AwsThingSensor:
                     self.axis_collection.append(axis)
                 else:
                     raise Exception('Found an axis configuration that is not a AwsThingSensorAxis object!')
+        if sensor_value_reader_implementation is None:
+            raise Exception('sensor_value_reader_implementation must be defined')
+        if not isinstance(sensor_value_reader_implementation, SensorStateReader):
+            raise Exception('sensor_value_reader_implementation must be an instance of SensorStateReader')
+        self.sensor_value_reader_implementation = sensor_value_reader_implementation
+        self.sensor_reader_trigger_interval = sensor_reader_trigger_interval
+        self.last_trigger_processed = 0
+
+    def trigger_sensor_reading(self):
+        now = get_utc_timestamp()
+        if (now - self.last_trigger_processed) > self.sensor_reader_trigger_interval:
+            self.last_trigger_processed = now
+            self.sensor_value_reader_implementation.read_state(sensor_axis=self.axis_collection)
 
     def to_dict(self):
         axis_list = list()
