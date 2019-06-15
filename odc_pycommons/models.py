@@ -10,6 +10,8 @@ import hashlib
 from datetime import datetime
 import traceback
 from decimal import Decimal
+from odc_pycommons import OculusDLogger
+from odc_pycommons import get_utc_timestamp
 
 
 class CommsRequest:
@@ -141,13 +143,204 @@ AXIS_DATA_TYPES = {
 }
 
 
+class AwsSensorAxisState:
+    """
+        An Axis state is matched when a particular measured value matches a predertermined configured value.
+
+        A severity is attached to each state and is used in the final logging of any events to assist further downstream processing of the severity.
+
+        The eval_function must handle at least the following parameters:
+
+            * state_config -> AwsSensorAxisState
+            * input_value  -> Any value the measurement produced
+            * event_logger -> OculusDLogger
+
+        The eval_function must return a boolean True (the input value matched the state definition), or False (typically the default)
+
+        Example scenario 1:
+        ------------------
+        
+            You have a temperature sensor. You want to define three states: too_cold (temperatures below 50), desired (between 50 and below 75) and too_hot (75 and above)
+
+            It is critical for you that the temperature is between 50 and 75. So, the desired state will have a severity of 0 while the other states will be set at anything >0, like 9
+
+            A typical implementation could look like this:
+
+                def temp_state_eval(state_config: AwsSensorAxisState, input_value: object, event_logger:OculusDLogger=OculusDLogger()):
+                    if state_config.state_name == 'too_cold':
+                        if input_value < 50:
+                            event_logger.info(message='Stated "too_cold" matched condition')
+                            return True
+                    elif state_config.state_name == 'desired':
+                        if input_value >= 50 and input_value < 75:
+                            event_logger.info(message='Stated "desired" matched condition')
+                            return True
+                    elif state_config.state_name == 'too_hot':
+                        if input_value >= 75:
+                            event_logger.info(message='Stated "too_hot" matched condition')
+                            return True
+                    else:
+                        event_logger.error(message='No states matched')
+                    return False
+
+                too_cold_state = AwsSensorAxisState(
+                    state_name='too_cold',
+                    state_type=int,
+                    severity: int=9,
+                    eval_function=temp_state_eval
+                )
+                too_hot_state = AwsSensorAxisState(
+                    state_name='too_hot',
+                    state_type=int,
+                    severity: int=9,
+                    eval_function=temp_state_eval
+                )
+                desired_state = AwsSensorAxisState(
+                    state_name='desired',
+                    state_type=int,
+                    severity: int=0,
+                    eval_function=temp_state_eval
+                )
+
+                # ... later, i=within this library, after a reading has been received, the reading will be matched against all defined states. 
+                # Something like this might be an equivalent process:
+                states = [too_cold_state, too_hot_state, desired_state]
+                while True:
+                    temp_reading = get_temp()   # dummy function... real world will work a little different. For now, pretend that an integer is returned
+                    for state in states:
+                        if state.evaluate_value(input_value=temp_reading) is True:
+                            if state.severity > 0:
+                                raise_the_alarm(state_definition=state, input_value=temp_reading) # Another dummy function used to demonstrate how you could raise an alarm..
+                    time,sleep(60)
+    """
+
+    def __init__(
+        self,
+        state_name: str,
+        state_type: object,
+        state_value: object=None,
+        severity: int=0,
+        eval_function: object=None,
+        event_logger: OculusDLogger=OculusDLogger()
+    ):
+        self.state_name = state_name
+        self.state_type = state_type
+        self.state_value = state_value
+        self.severity = severity
+        self.eval_function = None
+        if isinstance(eval_function, callable):
+            self.eval_function = eval_function
+        self.event_logger = event_logger
+
+    def evaluate_value(self, input_value: object)->bool:
+        result = False
+        try:
+            # Attempt to run the supplied matcher function
+            if self.eval_function is not None:
+                result = self.eval_function(state_config=self, input_value=input_value, event_logger=self.event_logger)
+                if isinstance(result, bool):
+                    self.event_logger.info(message='eval_function returned "{}"'.format(result))
+                else:
+                    result = False  # reset
+                    self.event_logger.error(message='eval_function returned a non-boolean value. Falling back to basic matching')
+            # Fall back to basic match: if the input value matches the type and value, return True
+            if input_value is None and self.state_type is None and self.state_value is None:
+                result = True
+                self.event_logger.info(message='State value "None" triggered by default state check')
+            elif input_value is not None and self.state_type is not None and self.state_value is not None:
+                if isinstance(input_value, self.state_type):
+                    if input_value == self.state_value:
+                        result = True
+                        self.event_logger.info(message='State value "Match" triggered by default state check')
+        except:
+            self.event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
+        self.event_logger.info(message='Final State Check Result: {}'.format(result))
+        return result
+
+
+class StateAlert:
+
+    def evaluate_state(
+        self, 
+        aws_sns_client: object,
+        state: AwsSensorAxisState,
+        input_value: object=None,
+        event_logger: OculusDLogger=OculusDLogger()
+    ):
+        try:
+            if state.evaluate_value(input_value=input_value) is True:
+                if state.severity > 0:
+                    event_logger.error(message='STATE_ALERT: State "{}" alert with Severity "{}"'.format(state.state_name, sate.severity))
+                else:
+                    event_logger.info(message='STATE_ALERT: State "{}" alert with Severity "{}"'.format(state.state_name, sate.severity))
+        except:
+            event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
+
+
+class AwsSnsStateAlert(StateAlert):
+
+    def __init__(self, sns_topic_arn):
+        self.sns_topic_arn = sns_topic_arn
+        super().__init__()
+
+    def evaluate_state(
+        self, 
+        aws_sns_client: object,
+        state: AwsSensorAxisState,
+        input_value: object=None,
+        event_logger: OculusDLogger=OculusDLogger()
+    ):
+        try:
+            if state.evaluate_value(input_value=input_value) is True:
+                if state.severity > 0:
+                    event_logger.error(message='STATE_ALERT: State "{}" alert with Severity "{}"'.format(state.state_name, sate.severity))
+                    input_value_abbreviated = '{}'.format(input_value)
+                    if len(input_value_abbreviated) > 10:
+                        input_value_abbreviated = '{}... (shortened)'.format(input_value_abbreviated[0:10])
+                    response = aws_sns_client.publish(
+                        TopicArn=self.sns_topic_arn,
+                        Message='string',
+                        Subject='[STATE_ALERT] {} - severity "{}"'.format(state.state_name, state.severity),
+                        MessageStructure='OculusD State Alert: Input value "{}" triggered state with configured severity of "{}"'.format(input_value_abbreviated, state.severity)
+                    )
+                    event_logger.debug(message='response={}'.format(response))
+                else:
+                    event_logger.info(message='STATE_ALERT: State "{}" alert with Severity "{}"'.format(state.state_name, sate.severity))
+        except:
+            event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
+
+
 class AwsThingSensorAxis:
 
-    def __init__(self, axis_name: str, axis_data_type: str='STRING'):
+    def __init__(
+        self,
+        axis_name: str,
+        axis_data_type: str='STRING',
+        axis_states: list=list(),
+        axis_state_alert_processor: StateAlert=StateAlert()
+    ):
         self.axis_name = axis_name
         if axis_data_type not in AXIS_DATA_TYPES:
             raise Exception('Wrong data type. Must be one of {}'.format(list(AXIS_DATA_TYPES.keys())))
         self.axis_data_type = axis_data_type
+        self.axis_states = list()
+        if axis_states is not None:
+            if isinstance(axis_states, list):
+                if len(axis_states) > 0:
+                    for axis_state in axis_states:
+                        if axis_state is not None:
+                            if isinstance(axis_state, AwsSensorAxisState):
+                                self.axis_states.append(axis_state)
+                            else:
+                                raise Exception('Expected an AwsSensorAxisState but got "{}"'.format(type(axis_state)))
+                        else:
+                            raise Exception('When supplied, axis state objects cannot be None')
+        self.axis_state_alert_processor = axis_state_alert_processor
+        self.last_reading_value = None
+        self.last_reading_timestamp_utc = 0
+
+    def record_axis_reading(self, reading_value: object):
+        pass
 
     def to_dict(self):
         return {
@@ -160,7 +353,12 @@ class AwsThingSensorAxis:
 
 class AwsThingSensor:
     
-    def __init__(self, sensor_name: str, axis_collection: list=list()):
+    def __init__(
+        self,
+        sensor_name: str,
+        axis_collection: list=list(),
+        sensor_value_reader_implementation: object=None # TODO - need to create a definition for this implementation that will loop through axis and record readings for every axis. For each reading, the state matching processing should also kick in.
+    ):
         self.sensor_name = sensor_name
         self.axis_collection = list()
         if len(axis_collection) > 0:
