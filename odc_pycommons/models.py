@@ -143,7 +143,7 @@ AXIS_DATA_TYPES = {
 }
 
 
-class AwsSensorAxisState:
+class SensorAxisState:
     """
         An Axis state is matched when a particular measured value matches a predertermined configured value.
 
@@ -262,7 +262,7 @@ class StateAlert:
 
     def evaluate_state(
         self, 
-        state: AwsSensorAxisState,
+        state: SensorAxisState,
         input_value: object=None,
         event_logger: OculusDLogger=OculusDLogger()
     ):
@@ -285,7 +285,7 @@ class AwsSnsStateAlert(StateAlert):
 
     def evaluate_state(
         self, 
-        state: AwsSensorAxisState,
+        state: SensorAxisState,
         input_value: object=None,
         event_logger: OculusDLogger=OculusDLogger()
     ):
@@ -309,7 +309,7 @@ class AwsSnsStateAlert(StateAlert):
             event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
 
 
-class AwsThingSensorAxis:
+class ThingSensorAxis:
 
     def __init__(
         self,
@@ -328,7 +328,7 @@ class AwsThingSensorAxis:
                 if len(axis_states) > 0:
                     for axis_state in axis_states:
                         if axis_state is not None:
-                            if isinstance(axis_state, AwsSensorAxisState):
+                            if isinstance(axis_state, SensorAxisState):
                                 self.axis_states.append(axis_state)
                             else:
                                 raise Exception('Expected an AwsSensorAxisState but got "{}"'.format(type(axis_state)))
@@ -416,7 +416,7 @@ class SensorStateReader:
             )
 
 
-class AwsThingSensor:
+class ThingSensor:
     
     def __init__(
         self,
@@ -429,7 +429,7 @@ class AwsThingSensor:
         self.axis_collection = list()
         if len(axis_collection) > 0:
             for axis in axis_collection:
-                if isinstance(axis, AwsThingSensorAxis):
+                if isinstance(axis, ThingSensorAxis):
                     self.axis_collection.append(axis)
                 else:
                     raise Exception('Found an axis configuration that is not a AwsThingSensorAxis object!')
@@ -455,22 +455,25 @@ class AwsThingSensor:
         return {
             'SensorName': self.sensor_name,
             'SensorAxisCollection': axis_list,
+            'SensorReader': {
+                'SensorReaderTriggerInterval': self.sensor_reader_trigger_interval,
+                'SensorReaderClassName': self.sensor_value_reader_implementation.__class__.__name__,
+            },
         }
 
     def to_json(self):
         return json.dumps(self.to_dict())
 
 
-class AwsThing:
+class Thing:
 
-    def __init__(self, thing_name: str, thing_arn: str=None, sensors: list=list()):
+    def __init__(self, thing_name: str, sensors: list=list()):
         self.thing_name = thing_name
-        self.thing_arn = thing_arn
         self.sensors = list()
         self.sensor_names = list()
         if len(sensors) > 0:
             for sensor in sensors:
-                if isinstance(sensor, AwsThingSensor):
+                if isinstance(sensor, ThingSensor):
                     if sensor.sensor_name in self.sensor_names:
                         raise Exception('Sensor named "{}" already defined'.format(sensor.sensor_name))
                     if len(sensor.axis_collection) > 0:
@@ -480,6 +483,75 @@ class AwsThing:
                         raise Exception('Every sensor must have at least 1 axis define. Sensor "{}" appears to have none.'.format(sensor.sensor_name))
                 else:
                     raise Exception('Found a sensor that is not a AwsThingSensor object!')
+
+    def activate_sensor_triggers(self):
+        if len(self.sensors) > 0:
+            for sensor in self.sensors:
+                sensor.trigger_sensor_reading()
+
+    def to_dict(self):
+        sensor_list = list()
+        if len(self.sensors) > 0:
+            for sensor in self.sensors:
+                sensor_list.append(sensor.to_dict())
+        return {
+            'ThingName': self.thing_name,
+            'ThingSensors': sensor_list,
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
+
+class ThingGroup:
+
+    def __init__(self, thing_group_name: str, things: list=list()):
+        self.thing_group_name = thing_group_name
+        self.things = list()
+        if things is not None:
+            if isinstance(things, list):
+                if len(things) > 0:
+                    for thing in things:
+                        if isinstance(thing, Thing):
+                            self.things.append(thing)
+
+    def find_thing_by_name(self, thing_name: str)->Thing:
+        if len(self.things) > 0:
+            for thing in self.things:
+                if thing.thing_name == thing_name:
+                    return thing
+        raise Exception('Thing named "{}" not found in group named "{}"'.format(thing_name, self.thing_group_name))
+
+    def thing_exists(self, thing_name)->bool:
+        if len(self.things) > 0:
+            for thing in self.things:
+                if thing.thing_name == thing_name:
+                    return True
+        return False
+
+    def add_thing_to_group(self, thing: Thing):
+        if self.thing_exists(thing_name=thing.thing_name) is False:
+            self.things.append(thing)
+
+    def to_dict(self)->dict:
+        things_list = list()
+        for thing in self.things:
+            things_list.append(thing.to_dict())
+        return {
+            'ThingGroupName': self.thing_group_name,
+            'Things': things_list,
+        }
+
+    def to_json(self)->str:
+        return json.dumps(self.to_dict()) 
+
+
+
+class AwsThing(Thing):
+
+    def __init__(self, thing_name: str, thing_arn: str=None, sensors: list=list()):
+        self.thing_arn = thing_arn
+        super().__init__(thing_name=thing_name, sensors=sensors)
 
     def to_dict(self):
         sensor_list = list()
@@ -495,5 +567,24 @@ class AwsThing:
     def to_json(self):
         return json.dumps(self.to_dict())
 
+
+class AwsThingGroup(ThingGroup):
+
+    def __init__(self, thing_group_name: str, thing_group_arn: str, things: list=list()):
+        self.thing_group_arn = thing_group_arn
+        super().__init__(thing_group_name=thing_group_name)
+        if things is not None:
+            if isinstance(things, list):
+                if len(things) > 0:
+                    for thing in things:
+                        if isinstance(thing, AwsThing):
+                            self.things.append(thing)
+    
+    def get_thing_arn(self, thing_name: str)->str:
+        if len(self.things) > 0:
+            for thing in self.things:
+                if thing.thing_name == thing_name:
+                    return thing.thing_arn
+        raise Exception('Thing named "{}" not found in group named "{}"'.format(thing_name, self.thing_group_name))
 
 # EOF
