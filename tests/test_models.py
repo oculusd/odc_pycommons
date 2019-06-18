@@ -22,6 +22,7 @@ from odc_pycommons.models import CommsResponse
 from odc_pycommons.models import ThingSensorAxis
 from odc_pycommons.models import ThingSensor
 from odc_pycommons.models import Thing
+from odc_pycommons.models import AwsThing
 from decimal import Decimal
 
 
@@ -315,9 +316,10 @@ class TestAwsThingSensor(unittest.TestCase):
         d = sensor.to_dict()
         self.assertIsNotNone(d)
         self.assertIsInstance(d, dict)
-        self.assertEqual(len(d), 2)
+        self.assertEqual(len(d), 3)
         self.assertTrue('SensorName' in d)
         self.assertTrue('SensorAxisCollection' in d)
+        self.assertTrue('SensorReader' in d)
         self.assertIsNotNone(d['SensorName'])
         self.assertIsNotNone(d['SensorAxisCollection'])
         self.assertEqual(d['SensorName'], 'sensor1')
@@ -333,9 +335,10 @@ class TestAwsThingSensor(unittest.TestCase):
         d = sensor.to_dict()
         self.assertIsNotNone(d)
         self.assertIsInstance(d, dict)
-        self.assertEqual(len(d), 2)
+        self.assertEqual(len(d), 3)
         self.assertTrue('SensorName' in d)
         self.assertTrue('SensorAxisCollection' in d)
+        self.assertTrue('SensorReader' in d)
         self.assertIsNotNone(d['SensorName'])
         self.assertIsNotNone(d['SensorAxisCollection'])
         self.assertEqual(d['SensorName'], 'sensor1')
@@ -376,9 +379,10 @@ class TestAwsThingSensor(unittest.TestCase):
         d = json.loads(j)
         self.assertIsNotNone(d)
         self.assertIsInstance(d, dict)
-        self.assertEqual(len(d), 2)
+        self.assertEqual(len(d), 3)
         self.assertTrue('SensorName' in d)
         self.assertTrue('SensorAxisCollection' in d)
+        self.assertTrue('SensorReader' in d)
         self.assertIsNotNone(d['SensorName'])
         self.assertIsNotNone(d['SensorAxisCollection'])
         self.assertEqual(d['SensorName'], 'sensor1')
@@ -403,7 +407,7 @@ class TestAwsThingSensor(unittest.TestCase):
 class TestAwsThing(unittest.TestCase):
 
     def test_aws_thing_init_01(self):
-        thing = Thing(thing_name='thing1')
+        thing = AwsThing(thing_name='thing1')
         self.assertIsNotNone(thing)
         self.assertIsInstance(thing, Thing)
         self.assertEqual(thing.thing_name, 'thing1')
@@ -413,7 +417,7 @@ class TestAwsThing(unittest.TestCase):
         self.assertEqual(len(thing.sensors), 0)
 
     def test_aws_thing_init_02(self):
-        thing = Thing(thing_name='thing1', thing_arn='arn1')
+        thing = AwsThing(thing_name='thing1', thing_arn='arn1')
         self.assertIsNotNone(thing)
         self.assertIsInstance(thing, Thing)
         self.assertEqual(thing.thing_name, 'thing1')
@@ -438,7 +442,7 @@ class TestAwsThing(unittest.TestCase):
                 ThingSensorAxis(axis_name='axis1'),
             ]
         )
-        thing = Thing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+        thing = AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
         self.assertIsNotNone(thing)
         self.assertIsInstance(thing, Thing)
         self.assertEqual(thing.thing_name, 'thing1')
@@ -461,7 +465,7 @@ class TestAwsThing(unittest.TestCase):
         )
         sensor2 = 123
         with self.assertRaises(Exception):
-            Thing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+            AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
 
     def test_aws_thing_init_fail_with_valid_sensor_and_missing_axis(self):
         sensor1 = ThingSensor(
@@ -475,7 +479,7 @@ class TestAwsThing(unittest.TestCase):
             sensor_name='sensor2'
         )
         with self.assertRaises(Exception):
-            Thing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+            AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
 
     def test_aws_thing_init_fail_with_duplicate_sensor_names(self):
         sensor1 = ThingSensor(
@@ -492,11 +496,11 @@ class TestAwsThing(unittest.TestCase):
             ]
         )
         with self.assertRaises(Exception):
-            Thing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+            AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
 
     def test_aws_thing_init_fail_with_invalid_sensor_collection(self):
         with self.assertRaises(Exception):
-            Thing(thing_name='thing1', thing_arn='arn1', sensors=123)
+            AwsThing(thing_name='thing1', thing_arn='arn1', sensors=123)
 
     def test_aws_thing_to_dict(self):
         sensor1 = ThingSensor(
@@ -512,7 +516,7 @@ class TestAwsThing(unittest.TestCase):
                 ThingSensorAxis(axis_name='axis1'),
             ]
         )
-        thing = Thing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+        thing = AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
         d = thing.to_dict()
         self.assertIsNotNone(d)
         self.assertIsInstance(d, dict)
@@ -528,9 +532,10 @@ class TestAwsThing(unittest.TestCase):
         for sensor in d['ThingSensors']:
             self.assertIsNotNone(sensor)
             self.assertIsInstance(sensor, dict)
-            self.assertEqual(len(sensor), 2)
+            self.assertEqual(len(sensor), 3)
             self.assertTrue('SensorName' in sensor)
             self.assertTrue('SensorAxisCollection' in sensor)
+            self.assertTrue('SensorReader' in sensor)
             self.assertIsNotNone(sensor['SensorName'])
             self.assertIsNotNone(sensor['SensorAxisCollection'])
             self.assertIsInstance(sensor['SensorAxisCollection'], list)
@@ -556,7 +561,7 @@ class TestAwsThing(unittest.TestCase):
                 ThingSensorAxis(axis_name='axis1'),
             ]
         )
-        thing = Thing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
+        thing = AwsThing(thing_name='thing1', thing_arn='arn1', sensors=[sensor1, sensor2])
         j = thing.to_json()
         self.assertIsNotNone(j)
         self.assertIsInstance(j, str)
@@ -576,9 +581,10 @@ class TestAwsThing(unittest.TestCase):
         for sensor in d['ThingSensors']:
             self.assertIsNotNone(sensor)
             self.assertIsInstance(sensor, dict)
-            self.assertEqual(len(sensor), 2)
+            self.assertEqual(len(sensor), 3)
             self.assertTrue('SensorName' in sensor)
             self.assertTrue('SensorAxisCollection' in sensor)
+            self.assertTrue('SensorReader' in sensor)
             self.assertIsNotNone(sensor['SensorName'])
             self.assertIsNotNone(sensor['SensorAxisCollection'])
             self.assertIsInstance(sensor['SensorAxisCollection'], list)
