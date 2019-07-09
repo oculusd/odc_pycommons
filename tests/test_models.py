@@ -631,6 +631,14 @@ def _eval_function_test_numbers(state_config: SensorAxisState, input_value: obje
     return False
 
 
+def _empty_function():
+    pass
+
+
+def _always_return_one(state_config: SensorAxisState, input_value: object, event_logger:OculusDLogger=OculusDLogger()):
+    return 1
+
+
 class TestSensorAxisState(unittest.TestCase):
 
     def setUp(self):    
@@ -657,6 +665,65 @@ class TestSensorAxisState(unittest.TestCase):
         self.assertFalse(too_low.evaluate_value(input_value=80))
         self.assertTrue(too_low.evaluate_value(input_value=30))
 
+    def test_sensor_axis_state_with_invalid_eval_function(self):
+        too_low = SensorAxisState(
+            state_name='too_cold',
+            state_type=int,
+            severity=9,
+            eval_function=_empty_function,
+            event_logger=self.L
+        )
+        self.assertIsNotNone(too_low)
+        self.assertIsInstance(too_low, SensorAxisState)
+        self.assertEqual(too_low.state_name, 'too_cold')
+        self.assertFalse(too_low.evaluate_value(input_value=60))
+        self.assertFalse(too_low.evaluate_value(input_value=80))
+        self.assertFalse(too_low.evaluate_value(input_value=30))
+
+    def test_sensor_axis_state_with_invalid_eval_function_2(self):
+        too_low = SensorAxisState(
+            state_name='too_cold',
+            state_type=int,
+            severity=9,
+            eval_function=_always_return_one,
+            event_logger=self.L
+        )
+        self.assertIsNotNone(too_low)
+        self.assertIsInstance(too_low, SensorAxisState)
+        self.assertEqual(too_low.state_name, 'too_cold')
+        self.assertFalse(too_low.evaluate_value(input_value=60))
+        self.assertFalse(too_low.evaluate_value(input_value=80))
+        self.assertFalse(too_low.evaluate_value(input_value=30))
+
+    def test_sensor_axis_state_with_none_eval_function_testing_default_check_1(self):
+        too_low = SensorAxisState(
+            state_name='too_cold',
+            state_type=None,
+            severity=9,
+            eval_function=None,
+            event_logger=self.L
+        )
+        self.assertIsNotNone(too_low)
+        self.assertIsInstance(too_low, SensorAxisState)
+        self.assertEqual(too_low.state_name, 'too_cold')
+        self.assertFalse(too_low.evaluate_value(input_value=60))
+        self.assertTrue(too_low.evaluate_value(input_value=None))
+
+    def test_sensor_axis_state_with_none_eval_function_testing_default_check_2(self):
+        too_low = SensorAxisState(
+            state_name='too_cold',
+            state_type=int,
+            state_value=50,
+            severity=9,
+            eval_function=None,
+            event_logger=self.L
+        )
+        self.assertIsNotNone(too_low)
+        self.assertIsInstance(too_low, SensorAxisState)
+        self.assertEqual(too_low.state_name, 'too_cold')
+        self.assertFalse(too_low.evaluate_value(input_value=60))
+        self.assertFalse(too_low.evaluate_value(input_value=40))
+        self.assertTrue(too_low.evaluate_value(input_value=50))
 
 
 if __name__ == '__main__':

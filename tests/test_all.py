@@ -32,6 +32,7 @@ from tests.test_models import TestCommsResponse
 from tests.test_models import TestAwsThingSensorAxis
 from tests.test_models import TestAwsThingSensor
 from tests.test_models import TestAwsThing
+from tests.test_models import TestSensorAxisState
 
 
 def suite():
@@ -267,6 +268,12 @@ def suite():
     suite.addTest(TestAwsThing('test_aws_thing_init_fail_with_invalid_sensor_collection'))
     suite.addTest(TestAwsThing('test_aws_thing_to_dict'))
     suite.addTest(TestAwsThing('test_aws_thing_to_json'))
+
+    suite.addTest(TestSensorAxisState('test_init_sensor_axis_state_with_numeric_state'))
+    suite.addTest(TestSensorAxisState('test_sensor_axis_state_with_invalid_eval_function'))
+    suite.addTest(TestSensorAxisState('test_sensor_axis_state_with_invalid_eval_function_2'))
+    suite.addTest(TestSensorAxisState('test_sensor_axis_state_with_none_eval_function_testing_default_check_1'))
+    suite.addTest(TestSensorAxisState('test_sensor_axis_state_with_none_eval_function_testing_default_check_2'))
 
     return suite
 

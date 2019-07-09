@@ -237,11 +237,15 @@ class SensorAxisState:
         try:
             # Attempt to run the supplied matcher function
             if self.eval_function is not None:
-                result = self.eval_function(state_config=self, input_value=input_value, event_logger=self.event_logger)
+                result = False  # default
+                try:
+                    result = self.eval_function(state_config=self, input_value=input_value, event_logger=self.event_logger)
+                except:
+                    self.event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
                 if isinstance(result, bool):
                     self.event_logger.info(message='eval_function returned "{}"'.format(result))
                 else:
-                    result = False  # reset
+                    result = False # reset
                     self.event_logger.error(message='eval_function returned a non-boolean value. Falling back to basic matching')
             # Fall back to basic match: if the input value matches the type and value, return True
             if input_value is None and self.state_type is None and self.state_value is None:
@@ -252,8 +256,8 @@ class SensorAxisState:
                     if input_value == self.state_value:
                         result = True
                         self.event_logger.info(message='State value "Match" triggered by default state check')
-        except:
-            self.event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
+        except:                                                                                 # pragma: no cover
+            self.event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))     # pragma: no cover
         self.event_logger.info(message='Final State Check Result: {}'.format(result))
         return result
 
