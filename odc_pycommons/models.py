@@ -228,7 +228,7 @@ class SensorAxisState:
         self.state_value = state_value
         self.severity = severity
         self.eval_function = None
-        if isinstance(eval_function, callable):
+        if callable(eval_function) is True:
             self.eval_function = eval_function
         self.event_logger = event_logger
 

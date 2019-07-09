@@ -16,6 +16,8 @@ Usage with coverage:
 
 import unittest
 import json
+import logging
+from odc_pycommons import OculusDLogger, DEBUG, formatter, get_utc_timestamp
 from odc_pycommons.models import CommsRequest
 from odc_pycommons.models import CommsRestFulRequest
 from odc_pycommons.models import CommsResponse
@@ -23,7 +25,21 @@ from odc_pycommons.models import ThingSensorAxis
 from odc_pycommons.models import ThingSensor
 from odc_pycommons.models import Thing
 from odc_pycommons.models import AwsThing
+from odc_pycommons.models import SensorAxisState
 from decimal import Decimal
+
+
+class TestLogHandler(logging.Handler):
+
+    def __init__(self):
+        super().__init__()
+        self.lines = list()
+
+    def emit(self, record):
+        self.lines.append(self.format(record))
+
+    def flush(self):
+        self.lines = list()
 
 
 class TestCommsRequest(unittest.TestCase):
@@ -595,6 +611,52 @@ class TestAwsThing(unittest.TestCase):
                 self.assertEqual(len(axis), 2)
                 self.assertTrue('AxisName' in axis)
                 self.assertTrue('AxisDataType' in axis)
+
+
+def _eval_function_test_numbers(state_config: SensorAxisState, input_value: object, event_logger:OculusDLogger=OculusDLogger()):
+    if state_config.state_name == 'too_cold':
+        if input_value < 50:
+            event_logger.info(message='Stated "too_cold" matched condition')
+            return True
+    elif state_config.state_name == 'desired':
+        if input_value >= 50 and input_value < 75:
+            event_logger.info(message='Stated "desired" matched condition')
+            return True
+    elif state_config.state_name == 'too_hot':
+        if input_value >= 75:
+            event_logger.info(message='Stated "too_hot" matched condition')
+            return True
+    else:
+        event_logger.error(message='No states matched')
+    return False
+
+
+class TestSensorAxisState(unittest.TestCase):
+
+    def setUp(self):    
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+        self.ch = TestLogHandler()
+        self.ch.setLevel(logging.DEBUG)
+        self.ch.setFormatter(formatter)
+        self.logger.addHandler(self.ch)
+        self.L = OculusDLogger(logger_impl=self.logger)
+
+    def test_init_sensor_axis_state_with_numeric_state(self):
+        too_low = SensorAxisState(
+            state_name='too_cold',
+            state_type=int,
+            severity=9,
+            eval_function=_eval_function_test_numbers,
+            event_logger=self.L
+        )
+        self.assertIsNotNone(too_low)
+        self.assertIsInstance(too_low, SensorAxisState)
+        self.assertEqual(too_low.state_name, 'too_cold')
+        self.assertFalse(too_low.evaluate_value(input_value=60))
+        self.assertFalse(too_low.evaluate_value(input_value=80))
+        self.assertTrue(too_low.evaluate_value(input_value=30))
+
 
 
 if __name__ == '__main__':
