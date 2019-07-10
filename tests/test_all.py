@@ -33,6 +33,7 @@ from tests.test_models import TestAwsThingSensorAxis
 from tests.test_models import TestAwsThingSensor
 from tests.test_models import TestAwsThing
 from tests.test_models import TestSensorAxisState
+from tests.test_models import TestStateAlert
 
 
 def suite():
@@ -274,6 +275,8 @@ def suite():
     suite.addTest(TestSensorAxisState('test_sensor_axis_state_with_invalid_eval_function_2'))
     suite.addTest(TestSensorAxisState('test_sensor_axis_state_with_none_eval_function_testing_default_check_1'))
     suite.addTest(TestSensorAxisState('test_sensor_axis_state_with_none_eval_function_testing_default_check_2'))
+
+    suite.addTest(TestStateAlert('test_init_state_alert'))
 
     return suite
 

@@ -26,6 +26,7 @@ from odc_pycommons.models import ThingSensor
 from odc_pycommons.models import Thing
 from odc_pycommons.models import AwsThing
 from odc_pycommons.models import SensorAxisState
+from odc_pycommons.models import StateAlert
 from decimal import Decimal
 
 
@@ -724,6 +725,65 @@ class TestSensorAxisState(unittest.TestCase):
         self.assertFalse(too_low.evaluate_value(input_value=60))
         self.assertFalse(too_low.evaluate_value(input_value=40))
         self.assertTrue(too_low.evaluate_value(input_value=50))
+
+
+class TestStateAlert(unittest.TestCase):
+
+    """
+        Values: 
+            too_cold < 50
+            desired >= 50 and < 75
+            too_hot >= 75
+    """
+
+    def setUp(self):
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+        self.ch = TestLogHandler()
+        self.ch.setLevel(logging.DEBUG)
+        self.ch.setFormatter(formatter)
+        self.logger.addHandler(self.ch)
+        self.L = OculusDLogger(logger_impl=self.logger)
+        self.too_cold_state = SensorAxisState(
+            state_name='too_cold',
+            state_type=int,
+            severity=9,
+            eval_function=_eval_function_test_numbers,
+            event_logger=self.L
+        )
+
+    def found_alerts(self)->int:
+        found_instances = 0
+        for line in self.ch.lines:
+            if 'STATE_ALERT' in line and '- ERROR -' in line:
+                found_instances += 1
+        return found_instances
+
+    def found_info_alerts(self)->int:
+        found_instances = 0
+        for line in self.ch.lines:
+            if 'STATE_ALERT' in line and '- INFO -' in line:
+                found_instances += 1
+        return found_instances
+
+    def test_init_state_alert(self): 
+        sa = StateAlert()
+        self.assertIsNotNone(sa)
+        self.assertIsInstance(sa, StateAlert)
+        self.assertEqual(self.found_alerts(), 0)
+        self.assertEqual(self.found_info_alerts(), 0)
+        sa.evaluate_state(state=self.too_cold_state, input_value=55, event_logger=self.L)
+        self.assertEqual(self.found_alerts(), 0)
+        self.assertEqual(self.found_info_alerts(), 0)
+        sa.evaluate_state(state=self.too_cold_state, input_value=45, event_logger=self.L)
+        self.assertEqual(self.found_alerts(), 1)
+        self.assertEqual(self.found_info_alerts(), 0)
+        self.too_cold_state.severity = -1
+        self.assertEqual(self.too_cold_state.severity, -1)
+        sa.evaluate_state(state=self.too_cold_state, input_value=45, event_logger=self.L)
+        self.assertEqual(self.found_alerts(), 1)
+        self.assertEqual(self.found_info_alerts(), 1)
+
 
 
 if __name__ == '__main__':

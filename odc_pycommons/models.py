@@ -273,11 +273,11 @@ class StateAlert:
         try:
             if state.evaluate_value(input_value=input_value) is True:
                 if state.severity > 0:
-                    event_logger.error(message='STATE_ALERT: State "{}" alert with Severity "{}"'.format(state.state_name, sate.severity))
+                    event_logger.error(message='STATE_ALERT: State "{}" alert with Severity "{}"'.format(state.state_name, state.severity))
                 else:
-                    event_logger.info(message='STATE_ALERT: State "{}" alert with Severity "{}"'.format(state.state_name, sate.severity))
-        except:
-            event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))
+                    event_logger.info(message='STATE_ALERT: State "{}" alert with Severity "{}"'.format(state.state_name, state.severity))
+        except:                                                                                 # pragma: no cover
+            event_logger.error(message='EXCEPTION: {}'.format(traceback.format_exc()))          # pragma: no cover
 
 
 class AwsSnsStateAlert(StateAlert):
